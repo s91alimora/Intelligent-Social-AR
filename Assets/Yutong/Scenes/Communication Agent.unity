@@ -250,9 +250,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   agentName: agent_3
   sentences:
-  - Hi I'm Jeremy Huang, I'm a good friend of Yutong Ren and a second year Umich
-    computer science PhD student
-  - Hope you guys have a great fall break!
+  - Yeah I agree, I have a hard time to figure out the the data structure that should
+    be used for the first assignment
+  - Once we get the hang of picking the right data structures, the assignments should
+    feel way less painful.
   speakingRenderer: {fileID: 719974249}
   materialIndex: 0
   colorProperty: _Color
@@ -269,9 +270,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d4be45e05809b3f4ab4d9ba5124ff327, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  voice: en-us+f3
-  wpm: 120
-  pitch: 55
+  modelFileName: test_voice.onnx
+  lengthScale: 1.2
+  noiseScale: 0.8
   extraArgs: 
 --- !u!82 &719974247
 AudioSource:
@@ -577,8 +578,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   agentName: agent_2
   sentences:
-  - Hi my handsome boyfriend, thank you so much, so nice to have you in my life.
-  - Wow can't wait to see you in fall break
+  - I think it is alright in general but some of the homeworking is giving me a headache
+  - "Totally\u2014maybe we set up a study session and hit office hours to clear up
+    the tricky parts."
   speakingRenderer: {fileID: 763233037}
   materialIndex: 0
   colorProperty: _Color
@@ -595,9 +597,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d4be45e05809b3f4ab4d9ba5124ff327, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  voice: en-us+f5
-  wpm: 130
-  pitch: 55
+  modelFileName: amy.onnx
+  lengthScale: 0.95
+  noiseScale: 0.5
   extraArgs: 
 --- !u!82 &763233042
 AudioSource:
@@ -926,9 +928,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d4be45e05809b3f4ab4d9ba5124ff327, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  voice: en-us-nyc
-  wpm: 120
-  pitch: 45
+  modelFileName: test_voice.onnx
+  lengthScale: 1
+  noiseScale: 0.33
   extraArgs: 
 --- !u!114 &1735614586
 MonoBehaviour:
@@ -944,9 +946,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   agentName: agent_1
   sentences:
-  - Hi Yifei Huang, I'm your boyfriend Yutong Ren, today is your birthday
-  - Hahaha, I know I'm handsome, thanks for your compliment and a huge happy happy
-    birthday to you
+  - What do you think about the data structure and algorithm class for this semester?
+  - I hope the next few courses would give us a break.
   speakingRenderer: {fileID: 1735614580}
   materialIndex: 0
   colorProperty: _Color
@@ -1081,9 +1082,9 @@ MonoBehaviour:
   sequence:
   - agent: {fileID: 1735614586}
     sentenceIndex: 0
-  - agent: {fileID: 719974245}
-    sentenceIndex: 0
   - agent: {fileID: 763233040}
+    sentenceIndex: 0
+  - agent: {fileID: 719974245}
     sentenceIndex: 0
   - agent: {fileID: 1735614586}
     sentenceIndex: 1
