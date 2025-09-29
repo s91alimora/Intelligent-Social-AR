@@ -4,14 +4,17 @@ using System;
 using System.Threading.Tasks;
 
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
-using System.Speech.Synthesis; // requires System.Speech.dll in Assets/Plugins/Windows
+using System.Speech.Synthesis; // System.Speech.dll in Assets/Plugins/Windows
 #endif
 
 [RequireComponent(typeof(AudioSource))]
 public class TextToSpeech : MonoBehaviour
 {
     [TextArea(3, 6)]
-    public string textToSpeak = "Hello from Windows TTS via stream!";
+    public string textToSpeak = "Hello from System.Speech!";
+
+    [Tooltip("Exact voice name from GetInstalledVoices(), e.g. 'Microsoft Zira Desktop' or 'Microsoft Huihui Desktop'")]
+    public string voiceName = "Microsoft Zira Desktop";
 
     private AudioSource audioSource;
 
@@ -25,14 +28,21 @@ public class TextToSpeech : MonoBehaviour
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
         if (Input.GetKeyDown(KeyCode.Space) && !string.IsNullOrWhiteSpace(textToSpeak))
         {
-            // synthesize on a worker thread, then play on main
-            _ = SynthesizeAndPlay(textToSpeak);
+            _ = SynthesizeAndPlay(textToSpeak, voiceName);
+            Debug.Log("hhhh");
+        }
+        if (Input.GetKeyDown(KeyCode.V))
+        {
+            // List voices in Console
+            using (var s = new SpeechSynthesizer())
+                foreach (var v in s.GetInstalledVoices())
+                    Debug.Log($"Voice: {v.VoiceInfo.Name} ({v.VoiceInfo.Culture})");
         }
 #endif
     }
 
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
-    async Task SynthesizeAndPlay(string text)
+    async Task SynthesizeAndPlay(string text, string desiredVoice)
     {
         try
         {
@@ -41,26 +51,24 @@ public class TextToSpeech : MonoBehaviour
                 using (var ms = new MemoryStream())
                 using (var localSynth = new SpeechSynthesizer())
                 {
-                    // Optional: choose a specific installed voice
-                    // foreach (var v in localSynth.GetInstalledVoices()) Debug.Log(v.VoiceInfo.Name);
-                    // localSynth.SelectVoice("Microsoft Zira Desktop");
+                    if (!string.IsNullOrWhiteSpace(desiredVoice))
+                        localSynth.SelectVoice(desiredVoice); // pick a specific voice
 
-                    // IMPORTANT: go straight to a stream (avoid default audio device)
-                    localSynth.SetOutputToWaveStream(ms);
-                    localSynth.Speak(text);            // blocking on this worker thread
-                    localSynth.SetOutputToNull();      // detach
+                    localSynth.SetOutputToWaveStream(ms); // no default device
+                    localSynth.Speak(text);               // blocking on worker thread
+                    localSynth.SetOutputToNull();
                     return ms.ToArray();
                 }
             });
 
-            if (WavUtility.TryToAudioClip(wavBytes, out var clip))
+            if (WavToClip(wavBytes, out var clip))
             {
                 audioSource.clip = clip;
                 audioSource.Play();
             }
             else
             {
-                Debug.LogError("Failed to parse WAV from TTS.");
+                Debug.LogError("Failed to parse WAV data.");
             }
         }
         catch (Exception e)
@@ -68,65 +76,61 @@ public class TextToSpeech : MonoBehaviour
             Debug.LogError("TTS error: " + e);
         }
     }
-#endif
-}
 
-/// <summary>Minimal WAV reader for PCM 16-bit mono/any sample rate.</summary>
-public static class WavUtility
-{
-    public static bool TryToAudioClip(byte[] wavData, out AudioClip clip)
+    // Minimal WAV (PCM16 mono/stereo) ¡ú AudioClip
+    static bool WavToClip(byte[] data, out AudioClip clip)
     {
         clip = null;
         try
         {
             int pos = 0;
-            string riff = System.Text.Encoding.ASCII.GetString(wavData, pos, 4); pos += 4;
-            if (riff != "RIFF") return false;
+            string chunkID = System.Text.Encoding.ASCII.GetString(data, pos, 4); pos += 4;
+            if (chunkID != "RIFF") return false;
             pos += 4; // chunk size
-            string wave = System.Text.Encoding.ASCII.GetString(wavData, pos, 4); pos += 4;
-            if (wave != "WAVE") return false;
+            string format = System.Text.Encoding.ASCII.GetString(data, pos, 4); pos += 4;
+            if (format != "WAVE") return false;
 
-            string fmt = System.Text.Encoding.ASCII.GetString(wavData, pos, 4); pos += 4;
-            if (fmt != "fmt ") return false;
-
-            int sub1 = BitConverter.ToInt32(wavData, pos); pos += 4;
-            short audioFmt = BitConverter.ToInt16(wavData, pos); pos += 2; // 1 = PCM
-            short channels = BitConverter.ToInt16(wavData, pos); pos += 2;
-            int sampleRate = BitConverter.ToInt32(wavData, pos); pos += 4;
+            // fmt
+            string subchunk1ID = System.Text.Encoding.ASCII.GetString(data, pos, 4); pos += 4;
+            int subchunk1Size = BitConverter.ToInt32(data, pos); pos += 4;
+            short audioFormat = BitConverter.ToInt16(data, pos); pos += 2; // 1=PCM
+            short channels = BitConverter.ToInt16(data, pos); pos += 2;
+            int sampleRate = BitConverter.ToInt32(data, pos); pos += 4;
             pos += 6; // byteRate + blockAlign
-            short bps = BitConverter.ToInt16(wavData, pos); pos += 2;
-
-            if (sub1 > 16) pos += (sub1 - 16);
-
-            string hdr = System.Text.Encoding.ASCII.GetString(wavData, pos, 4); pos += 4;
-            while (hdr != "data")
+            short bitsPerSample = BitConverter.ToInt16(data, pos); pos += 2;
+            if (subchunk1Size > 16) pos += (subchunk1Size - 16);
+            // find data chunk
+            string subchunk2ID = System.Text.Encoding.ASCII.GetString(data, pos, 4); pos += 4;
+            while (subchunk2ID != "data")
             {
-                int size = BitConverter.ToInt32(wavData, pos); pos += 4 + size;
-                hdr = System.Text.Encoding.ASCII.GetString(wavData, pos, 4); pos += 4;
+                int skip = BitConverter.ToInt32(data, pos); pos += 4 + skip;
+                subchunk2ID = System.Text.Encoding.ASCII.GetString(data, pos, 4); pos += 4;
             }
-            int dataSize = BitConverter.ToInt32(wavData, pos); pos += 4;
+            int subchunk2Size = BitConverter.ToInt32(data, pos); pos += 4;
 
-            if (audioFmt != 1 || bps != 16) Debug.LogWarning($"Non-PCM16 WAV (fmt={audioFmt}, bps={bps}).");
+            if (audioFormat != 1 || bitsPerSample != 16)
+                Debug.LogWarning($"Non-PCM16 WAV: fmt={audioFormat}, bps={bitsPerSample}");
 
-            int bytesPerSample = bps / 8;
-            int totalSamples = dataSize / bytesPerSample / Math.Max((int)channels, 1);
+            int bytesPerSample = bitsPerSample / 8;
+            int channelCount = Math.Max((int)channels, 1);
+            int totalSamples = subchunk2Size / bytesPerSample / channelCount;
+
             float[] samples = new float[totalSamples];
-
-            if (channels == 1)
+            if (channelCount == 1)
             {
                 for (int i = 0; i < totalSamples; i++)
                 {
-                    short s = BitConverter.ToInt16(wavData, pos); pos += 2;
+                    short s = BitConverter.ToInt16(data, pos); pos += 2;
                     samples[i] = s / 32768f;
                 }
             }
-            else // simple stereo¡úmono downmix
+            else
             {
                 for (int i = 0; i < totalSamples; i++)
                 {
-                    short l = BitConverter.ToInt16(wavData, pos); pos += 2;
-                    short r = BitConverter.ToInt16(wavData, pos); pos += 2;
-                    samples[i] = ((l + r) * 0.5f) / 32768f;
+                    short l = BitConverter.ToInt16(data, pos); pos += 2;
+                    short r = BitConverter.ToInt16(data, pos); pos += 2;
+                    samples[i] = ((l + r) * 0.5f) / 32768f; // downmix stereo¡úmono
                 }
             }
 
@@ -134,10 +138,11 @@ public static class WavUtility
             clip.SetData(samples, 0);
             return true;
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Debug.LogError("WAV parse exception: " + e.Message);
+            Debug.LogError("WAV parse exception: " + ex.Message);
             return false;
         }
     }
+#endif
 }

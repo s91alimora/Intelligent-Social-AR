@@ -333,6 +333,7 @@ GameObject:
   - component: {fileID: 1735614579}
   - component: {fileID: 1735614584}
   - component: {fileID: 1735614583}
+  - component: {fileID: 1735614585}
   m_Layer: 0
   m_Name: agent_1
   m_TagString: Untagged
@@ -433,12 +434,13 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1735614578}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c20cd33a06001684288105413ac73fcb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  textToSpeak: This is the first test of text to speech
+  textToSpeak: Hello from System.Speech!
+  voiceName: Microsoft Zira Desktop
 --- !u!82 &1735614584
 AudioSource:
   m_ObjectHideFlags: 0
@@ -535,6 +537,23 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &1735614585
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1735614578}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4be45e05809b3f4ab4d9ba5124ff327, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  text: Hello from eSpeak NG!
+  voice: en-us-nyc
+  wpm: 170
+  pitch: 50
+  extraArgs: 
 --- !u!1 &1860428868
 GameObject:
   m_ObjectHideFlags: 0

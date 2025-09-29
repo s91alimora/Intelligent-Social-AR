@@ -15,7 +15,7 @@ C:/Unity Projects/ixr-testbed-prototype
 -logFile
 Logs/AssetImportWorker0.log
 -srvPort
-61412
+59368
 Successfully changed project path to: C:/Unity Projects/ixr-testbed-prototype
 C:/Unity Projects/ixr-testbed-prototype
 [UnityMemory] Configuration Parameters - Can be set up in boot.config
@@ -49,16 +49,16 @@ C:/Unity Projects/ixr-testbed-prototype
     "memorysetup-temp-allocator-size-cloud-worker=32768"
     "memorysetup-temp-allocator-size-gi-baking-worker=262144"
     "memorysetup-temp-allocator-size-gfx=262144"
-Player connection [14924]  Target information:
+Player connection [24728]  Target information:
 
-Player connection [14924]  * "[IP] 10.0.0.197 [Port] 0 [Flags] 2 [Guid] 2920955649 [EditorId] 2920955649 [Version] 1048832 [Id] WindowsEditor(7,LAPTOP-9GBS0VRI) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+Player connection [24728]  * "[IP] 10.0.0.197 [Port] 0 [Flags] 2 [Guid] 241361431 [EditorId] 241361431 [Version] 1048832 [Id] WindowsEditor(7,LAPTOP-9GBS0VRI) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
 
-Player connection [14924] Host joined multi-casting on [225.0.0.222:54997]...
-Player connection [14924] Host joined alternative multi-casting on [225.0.0.222:34997]...
+Player connection [24728] Host joined multi-casting on [225.0.0.222:54997]...
+Player connection [24728] Host joined alternative multi-casting on [225.0.0.222:34997]...
 [PhysX] Initialized MultithreadedTaskDispatcher with 16 workers.
-Refreshing native plugins compatible for Editor in 23.41 ms, found 12 plugins.
+Refreshing native plugins compatible for Editor in 28.04 ms, found 12 plugins.
 Unity memory allocator detected: MetaXRAudio native memory allocations will be tracked.
-Preloading 3 native plugins for Editor in 3.78 ms.
+Preloading 3 native plugins for Editor in 4.11 ms.
 Initialize engine version: 2022.3.42f1 (2dcb6a0abc42)
 [Subsystems] Discovering subsystems at path C:/Program Files/Unity/Hub/Editor/2022.3.42f1/Editor/Data/Resources/UnitySubsystems
 [Subsystems] Discovering subsystems at path C:/Unity Projects/ixr-testbed-prototype/Assets
@@ -75,22 +75,22 @@ Initialize mono
 Mono path[0] = 'C:/Program Files/Unity/Hub/Editor/2022.3.42f1/Editor/Data/Managed'
 Mono path[1] = 'C:/Program Files/Unity/Hub/Editor/2022.3.42f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32'
 Mono config path = 'C:/Program Files/Unity/Hub/Editor/2022.3.42f1/Editor/Data/MonoBleedingEdge/etc'
-Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56156
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56548
 Begin MonoManager ReloadAssembly
 Registering precompiled unity dll's ...
 Register platform support module: C:/Program Files/Unity/Hub/Editor/2022.3.42f1/Editor/Data/PlaybackEngines/WebGLSupport/UnityEditor.WebGL.Extensions.dll
 Register platform support module: C:/Program Files/Unity/Hub/Editor/2022.3.42f1/Editor/Data/PlaybackEngines/AndroidPlayer/UnityEditor.Android.Extensions.dll
 Register platform support module: C:/Program Files/Unity/Hub/Editor/2022.3.42f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll
-Registered in 0.010822 seconds.
+Registered in 0.012489 seconds.
 - Loaded All Assemblies, in  0.349 seconds
 Native extension for WindowsStandalone target not found
 Native extension for Android target not found
-Android Extension - Scanning For ADB Devices 307 ms
+Android Extension - Scanning For ADB Devices 265 ms
 Native extension for WebGL target not found
 Mono: successfully reloaded assembly
-- Finished resetting the current domain, in  0.635 seconds
-Domain Reload Profiling: 981ms
-	BeginReloadAssembly (107ms)
+- Finished resetting the current domain, in  0.597 seconds
+Domain Reload Profiling: 944ms
+	BeginReloadAssembly (101ms)
 		ExecutionOrderSort (0ms)
 		DisableScriptedObjects (0ms)
 		BackupInstance (0ms)
@@ -98,25 +98,25 @@ Domain Reload Profiling: 981ms
 		CreateAndSetChildDomain (1ms)
 	RebuildCommonClasses (31ms)
 	RebuildNativeTypeToScriptingClass (9ms)
-	initialDomainReloadingComplete (61ms)
-	LoadAllAssembliesAndSetupDomain (139ms)
-		LoadAssemblies (105ms)
+	initialDomainReloadingComplete (63ms)
+	LoadAllAssembliesAndSetupDomain (143ms)
+		LoadAssemblies (100ms)
 		RebuildTransferFunctionScriptingTraits (0ms)
-		AnalyzeDomain (136ms)
-			TypeCache.Refresh (135ms)
-				TypeCache.ScanAssembly (123ms)
+		AnalyzeDomain (140ms)
+			TypeCache.Refresh (139ms)
+				TypeCache.ScanAssembly (127ms)
 			ScanForSourceGeneratedMonoScriptInfo (0ms)
 			ResolveRequiredComponents (0ms)
-	FinalizeReload (635ms)
+	FinalizeReload (597ms)
 		ReleaseScriptCaches (0ms)
 		RebuildScriptCaches (0ms)
-		SetupLoadedEditorAssemblies (590ms)
+		SetupLoadedEditorAssemblies (555ms)
 			LogAssemblyErrors (0ms)
-			InitializePlatformSupportModulesInManaged (429ms)
-			SetLoadedEditorAssemblies (3ms)
+			InitializePlatformSupportModulesInManaged (386ms)
+			SetLoadedEditorAssemblies (4ms)
 			RefreshPlugins (0ms)
 			BeforeProcessingInitializeOnLoad (2ms)
-			ProcessInitializeOnLoadAttributes (112ms)
+			ProcessInitializeOnLoadAttributes (119ms)
 			ProcessInitializeOnLoadMethodAttributes (44ms)
 			AfterProcessingInitializeOnLoad (0ms)
 			EditorAssembliesLoaded (0ms)
@@ -126,7 +126,8 @@ Domain Reload Profiling: 981ms
 Worker process is ready to serve import requests
 Caller must complete domain reload
 Begin MonoManager ReloadAssembly
-- Loaded All Assemblies, in  0.753 seconds
+Symbol file LoadedFromMemory is not a mono symbol file
+- Loaded All Assemblies, in  0.815 seconds
 Native extension for WindowsStandalone target not found
 Native extension for Android target not found
 Native extension for WebGL target not found
@@ -134,11 +135,14 @@ Package Manager log level set to [2]
 [Package Manager] Server::EnsureServerProcessIsRunning -- launch failed, reason: Unity was launched with the -noUpm command-line argument
 [Package Manager] UpmClient::Send -- Unable to send message (not connected to UPM process).
 [Package Manager] Cannot connect to Unity Package Manager local server
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100    29    0    29    0     0    178      0 --:--:-- --:--:-- --:--:--   181
 [Package Manager] Server::EnsureServerProcessIsRunning -- launch failed, reason: Unity was launched with the -noUpm command-line argument
 [Package Manager] UpmClient::Send -- Unable to send message (not connected to UPM process).
 [Package Manager] Cannot connect to Unity Package Manager local server
 System.Reflection.TargetInvocationException: Exception has been thrown by the target of an invocation. ---> System.NullReferenceException: Object reference not set to an instance of an object
-  at Unity.XR.Oculus.OculusLoader.AssetPathToAbsolutePath (System.String assetPath) [0x0003d] in .\Library\PackageCache\com.unity.xr.oculus@4.2.0\Runtime\OculusLoader.cs:298 
+  at Unity.XR.Oculus.OculusLoader.AssetPathToAbsolutePath (System.String assetPath) [0x00040] in .\Library\PackageCache\com.unity.xr.oculus@4.2.0\Runtime\OculusLoader.cs:298 
   at Unity.XR.Oculus.OculusLoader.EditorLoadOVRPlugin () [0x0008c] in .\Library\PackageCache\com.unity.xr.oculus@4.2.0\Runtime\OculusLoader.cs:283 
   at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
   at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <8ce0bd04a7a04b4b9395538239d3fdd8>:0 
@@ -159,49 +163,49 @@ Mono: successfully reloaded assembly
 [Package Manager] Server::EnsureServerProcessIsRunning -- launch failed, reason: Unity was launched with the -noUpm command-line argument
 [Package Manager] UpmClient::Send -- Unable to send message (not connected to UPM process).
 [Package Manager] Cannot connect to Unity Package Manager local server
-- Finished resetting the current domain, in  2.419 seconds
-Domain Reload Profiling: 3166ms
-	BeginReloadAssembly (131ms)
+- Finished resetting the current domain, in  2.026 seconds
+Domain Reload Profiling: 2835ms
+	BeginReloadAssembly (155ms)
 		ExecutionOrderSort (0ms)
 		DisableScriptedObjects (5ms)
 		BackupInstance (0ms)
 		ReleaseScriptingObjects (0ms)
-		CreateAndSetChildDomain (21ms)
-	RebuildCommonClasses (27ms)
-	RebuildNativeTypeToScriptingClass (8ms)
-	initialDomainReloadingComplete (43ms)
-	LoadAllAssembliesAndSetupDomain (538ms)
-		LoadAssemblies (375ms)
+		CreateAndSetChildDomain (27ms)
+	RebuildCommonClasses (40ms)
+	RebuildNativeTypeToScriptingClass (9ms)
+	initialDomainReloadingComplete (33ms)
+	LoadAllAssembliesAndSetupDomain (573ms)
+		LoadAssemblies (394ms)
 		RebuildTransferFunctionScriptingTraits (0ms)
-		AnalyzeDomain (241ms)
-			TypeCache.Refresh (193ms)
-				TypeCache.ScanAssembly (176ms)
-			ScanForSourceGeneratedMonoScriptInfo (35ms)
-			ResolveRequiredComponents (12ms)
-	FinalizeReload (2420ms)
+		AnalyzeDomain (269ms)
+			TypeCache.Refresh (215ms)
+				TypeCache.ScanAssembly (196ms)
+			ScanForSourceGeneratedMonoScriptInfo (34ms)
+			ResolveRequiredComponents (17ms)
+	FinalizeReload (2026ms)
 		ReleaseScriptCaches (0ms)
 		RebuildScriptCaches (0ms)
-		SetupLoadedEditorAssemblies (2248ms)
+		SetupLoadedEditorAssemblies (1834ms)
 			LogAssemblyErrors (0ms)
-			InitializePlatformSupportModulesInManaged (24ms)
-			SetLoadedEditorAssemblies (5ms)
+			InitializePlatformSupportModulesInManaged (30ms)
+			SetLoadedEditorAssemblies (4ms)
 			RefreshPlugins (0ms)
-			BeforeProcessingInitializeOnLoad (94ms)
-			ProcessInitializeOnLoadAttributes (2073ms)
-			ProcessInitializeOnLoadMethodAttributes (44ms)
-			AfterProcessingInitializeOnLoad (8ms)
+			BeforeProcessingInitializeOnLoad (112ms)
+			ProcessInitializeOnLoadAttributes (1624ms)
+			ProcessInitializeOnLoadMethodAttributes (50ms)
+			AfterProcessingInitializeOnLoad (13ms)
 			EditorAssembliesLoaded (0ms)
 		ExecutionOrderSort2 (0ms)
-		AwakeInstancesAfterBackupRestoration (5ms)
-Shader 'Meta/MRUK/Scene/HighlightsAndShadows': fallback shader 'Off' not found
+		AwakeInstancesAfterBackupRestoration (6ms)
 Shader 'Oculus/OVRMRCameraFrameLit': fallback shader 'Alpha-Diffuse' not found
+Shader 'Meta/MRUK/Scene/HighlightsAndShadows': fallback shader 'Off' not found
 Launched and connected shader compiler UnityShaderCompiler.exe after 0.04 seconds
-Refreshing native plugins compatible for Editor in 17.76 ms, found 12 plugins.
-Preloading 3 native plugins for Editor in 0.21 ms.
-Unloading 6102 Unused Serialized files (Serialized files now loaded: 0)
-Unloading 82 unused Assets / (486.9 KB). Loaded Objects now: 6511.
-Memory consumption went from 226.8 MB to 226.3 MB.
-Total: 6.411600 ms (FindLiveObjects: 0.373400 ms CreateObjectMapping: 0.176500 ms MarkObjects: 5.571700 ms  DeleteObjects: 0.288900 ms)
+Refreshing native plugins compatible for Editor in 14.71 ms, found 12 plugins.
+Preloading 3 native plugins for Editor in 0.20 ms.
+Unloading 6104 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 82 unused Assets / (495.1 KB). Loaded Objects now: 6513.
+Memory consumption went from 226.9 MB to 226.4 MB.
+Total: 6.811500 ms (FindLiveObjects: 0.384300 ms CreateObjectMapping: 0.177700 ms MarkObjects: 5.957300 ms  DeleteObjects: 0.290000 ms)
 
 AssetImportParameters requested are different than current active one (requested -> active):
   custom:container-demuxer-ogg: 62fdf1f143b41e24485cea50d1cbac27 -> 
@@ -219,55 +223,10 @@ AssetImportParameters requested are different than current active one (requested
   custom:audio-encoder-webm-vorbis: bf7c407c2cedff20999df2af8eb42d56 -> 
 ========================================================================
 Received Import Request.
-  Time since last request: 422155.299266 seconds.
-  path: Assets/Yutong/Scripts/TextToSpeech.cs
-  artifactKey: Guid(c20cd33a06001684288105413ac73fcb) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
-Start importing Assets/Yutong/Scripts/TextToSpeech.cs using Guid(c20cd33a06001684288105413ac73fcb) Importer(815301076,1909f56bfc062723c751e8b465ee728b) [PhysX] Initialized MultithreadedTaskDispatcher with 16 workers.
- -> (artifact id: '30765145a6d044d2138eb3e08a0df4a0') in 0.002546 seconds
-Number of updated asset objects reloaded before import = 0
-Number of asset objects unloaded after import = 0
-========================================================================
-Received Import Request.
-  Time since last request: 17.368438 seconds.
-  path: Assets/Yutong/Scripts/TextToSpeech.cs
-  artifactKey: Guid(c20cd33a06001684288105413ac73fcb) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
-Start importing Assets/Yutong/Scripts/TextToSpeech.cs using Guid(c20cd33a06001684288105413ac73fcb) Importer(815301076,1909f56bfc062723c751e8b465ee728b) [PhysX] Initialized MultithreadedTaskDispatcher with 16 workers.
- -> (artifact id: 'ff3577f17864ee24173fdcc39847a25b') in 0.000837 seconds
-Number of updated asset objects reloaded before import = 0
-Number of asset objects unloaded after import = 0
-========================================================================
-Received Import Request.
-  Time since last request: 41.140387 seconds.
-  path: Assets/Yutong/Scripts/TextToSpeech.cs
-  artifactKey: Guid(c20cd33a06001684288105413ac73fcb) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
-Start importing Assets/Yutong/Scripts/TextToSpeech.cs using Guid(c20cd33a06001684288105413ac73fcb) Importer(815301076,1909f56bfc062723c751e8b465ee728b) [PhysX] Initialized MultithreadedTaskDispatcher with 16 workers.
- -> (artifact id: '5853f91a7c35ec406a67d4f187c1aa41') in 0.000522 seconds
-Number of updated asset objects reloaded before import = 0
-Number of asset objects unloaded after import = 0
-========================================================================
-Received Import Request.
-  Time since last request: 142.598214 seconds.
-  path: Assets/Yutong/Scripts/TextToSpeech.cs
-  artifactKey: Guid(c20cd33a06001684288105413ac73fcb) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
-Start importing Assets/Yutong/Scripts/TextToSpeech.cs using Guid(c20cd33a06001684288105413ac73fcb) Importer(815301076,1909f56bfc062723c751e8b465ee728b) [PhysX] Initialized MultithreadedTaskDispatcher with 16 workers.
- -> (artifact id: '3eb0dfd0c8fb3ff2cc8e555c7ada341b') in 0.000676 seconds
-Number of updated asset objects reloaded before import = 0
-Number of asset objects unloaded after import = 0
-========================================================================
-Received Import Request.
-  Time since last request: 85.847823 seconds.
-  path: Assets/Yutong/Scripts/TextToSpeech.cs
-  artifactKey: Guid(c20cd33a06001684288105413ac73fcb) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
-Start importing Assets/Yutong/Scripts/TextToSpeech.cs using Guid(c20cd33a06001684288105413ac73fcb) Importer(815301076,1909f56bfc062723c751e8b465ee728b) [PhysX] Initialized MultithreadedTaskDispatcher with 16 workers.
- -> (artifact id: '02b2a19e1919480de20e0fe3056847f1') in 0.000789 seconds
-Number of updated asset objects reloaded before import = 0
-Number of asset objects unloaded after import = 0
-========================================================================
-Received Import Request.
-  Time since last request: 226.217827 seconds.
-  path: Assets/Yutong/Scripts/TextToSpeech.cs
-  artifactKey: Guid(c20cd33a06001684288105413ac73fcb) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
-Start importing Assets/Yutong/Scripts/TextToSpeech.cs using Guid(c20cd33a06001684288105413ac73fcb) Importer(815301076,1909f56bfc062723c751e8b465ee728b) [PhysX] Initialized MultithreadedTaskDispatcher with 16 workers.
- -> (artifact id: 'c3476bef2643d9f44a4aa78d5c6b3d7e') in 0.000810 seconds
+  Time since last request: 3349.312761 seconds.
+  path: Assets/Yutong/Scripts/EditorTTS_Powershell.cs
+  artifactKey: Guid(923505e382f81934987f107deeb74416) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Yutong/Scripts/EditorTTS_Powershell.cs using Guid(923505e382f81934987f107deeb74416) Importer(815301076,1909f56bfc062723c751e8b465ee728b) [PhysX] Initialized MultithreadedTaskDispatcher with 16 workers.
+ -> (artifact id: '3c8ab6211f25d94a3f96d606b74cd496') in 0.002225 seconds
 Number of updated asset objects reloaded before import = 0
 Number of asset objects unloaded after import = 0
