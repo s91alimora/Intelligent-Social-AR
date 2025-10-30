@@ -106,30 +106,41 @@ public class SessionController : MonoBehaviour
     {
         if (!_built) return;
 
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (AdvancePressed()) // edge-triggered
         {
             if (_stage == 0)
             {
-                // Show header
                 SetHeaderVisible(true);
                 SetHeaderText(_spec.headerQuestion);
                 _stage = 1;
             }
             else if (_stage == 1)
             {
-                // Move to grid
                 SetHeaderVisible(false);
                 StartCoroutine(MoveAllToGrid(_spec.moveDurationSec));
                 _stage = 2;
             }
             else if (_stage == 2 && !_playing)
             {
-                // Start conversation
                 StartCoroutine(StartConversation());
                 _stage = 3;
             }
         }
     }
+
+    bool AdvancePressed()
+    {
+        // Quest controller (edge-triggered)
+        if (OVRInput.GetDown(OVRInput.RawButton.RIndexTrigger))
+            return true;
+
+        // Optional keyboard fallback when testing in editor
+        if (Input.GetKeyDown(KeyCode.Space))
+            return true;
+
+        return false;
+    }
+
 
     // ---------- External runtime loading API ----------
 
