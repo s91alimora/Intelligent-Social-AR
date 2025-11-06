@@ -25,6 +25,8 @@ public class AgentGenerator : MonoBehaviour
         var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
         go.name = id;
 
+        go.tag = "Agent";
+
         // place with correct Y so it ¡°sits¡± on the grid surface
         go.transform.position = new Vector3(gridPos.x, SurfaceY(), gridPos.z);
         go.transform.localScale = cubeSize;

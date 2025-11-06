@@ -79,6 +79,44 @@ public class SessionController : MonoBehaviour
     int _stage = 0; // 0=not started, 1=header shown, 2=moved, 3=playing/played
     bool _playing;
 
+    // --- Add alongside your existing Root/ScriptLine (keep them) ---
+    [Serializable] class ScriptLineAlt { public string agent; public List<string> text; public float waitSec = -1f; }
+    [Serializable]
+    class RootAlt
+    {
+        public string version = "1.0";
+        public GridSpec grid = new GridSpec();
+        public float defaultWaitSec = 1f;
+        public float moveDurationSec = 2f;
+        public string headerQuestion = "";
+        public StagingSpec staging = new StagingSpec();
+        public List<AgentSpec> agents = new List<AgentSpec>();
+        public List<ScriptLineAlt> script = new List<ScriptLineAlt>();
+    }
+
+    // Converts RootAlt (array form) -> Root (string form)
+    Root ConvertAlt(RootAlt alt)
+    {
+        var r = new Root
+        {
+            version = alt.version,
+            grid = alt.grid,
+            defaultWaitSec = alt.defaultWaitSec,
+            moveDurationSec = alt.moveDurationSec,
+            headerQuestion = alt.headerQuestion,
+            staging = alt.staging,
+            agents = alt.agents
+        };
+        r.script = new List<ScriptLine>(alt.script.Count);
+        foreach (var s in alt.script)
+        {
+            var joined = (s.text == null) ? "" : string.Join(" ", s.text);
+            r.script.Add(new ScriptLine { agent = s.agent, text = joined, waitSec = s.waitSec });
+        }
+        return r;
+    }
+
+
     // ---------- Lifecycle ----------
 
     void Awake()
@@ -131,8 +169,8 @@ public class SessionController : MonoBehaviour
     bool AdvancePressed()
     {
         // Quest controller (edge-triggered)
-        if (OVRInput.GetDown(OVRInput.RawButton.RIndexTrigger))
-            return true;
+        //if (OVRInput.GetDown(OVRInput.RawButton.RIndexTrigger))
+        //    return true;
 
         // Optional keyboard fallback when testing in editor
         if (Input.GetKeyDown(KeyCode.Space))
@@ -177,21 +215,33 @@ public class SessionController : MonoBehaviour
     {
         try
         {
-            _spec = JsonUtility.FromJson<Root>(json);
+            // First, try plain string form
+            var root = JsonUtility.FromJson<Root>(json);
+            if (root != null && root.script != null && root.script.Count > 0 &&
+                !string.IsNullOrEmpty(root.script[0].text))
+            {
+                _spec = root;
+                return true;
+            }
+
+            // Fallback: array-of-strings form for "text"
+            var alt = JsonUtility.FromJson<RootAlt>(json);
+            if (alt != null && alt.script != null && alt.script.Count > 0)
+            {
+                _spec = ConvertAlt(alt);
+                return true;
+            }
         }
         catch (Exception e)
         {
-            Debug.LogError("SessionController: JSON parse failed. " + e.Message);
-            _spec = null;
+            Debug.LogError("SessionController: JSON parse failed: " + e.Message);
         }
 
-        if (_spec == null)
-        {
-            Debug.LogError("SessionController: JSON is empty/invalid.");
-            return false;
-        }
-        return true;
+        _spec = null;
+        Debug.LogError("SessionController: JSON is empty/invalid.");
+        return false;
     }
+
 
     IEnumerator BuildFromSpec()
     {

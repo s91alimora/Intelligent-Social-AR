@@ -5,6 +5,7 @@ using System.Collections;
 using UDebug = UnityEngine.Debug;
 using Proc = System.Diagnostics.Process;
 using PSI = System.Diagnostics.ProcessStartInfo;
+using System.Collections.Generic;
 
 
 //[RequireComponent(typeof(AudioSource))]
@@ -149,6 +150,9 @@ public class CrossPlatformTTS : MonoBehaviour
 
     AudioSource _src;
 
+    static readonly Dictionary<string, AudioClip> _cache = new();
+    string Key(string text) => $"{modelFileName}|{lengthScale}|{noiseScale}|{text}";
+
     void Awake()
     {
         _src = GetComponent<AudioSource>() ?? gameObject.AddComponent<AudioSource>();
@@ -158,8 +162,27 @@ public class CrossPlatformTTS : MonoBehaviour
     public void Speak(string text, Action onComplete = null)
     {
         if (string.IsNullOrWhiteSpace(text)) { onComplete?.Invoke(); return; }
+
+        if (_cache.TryGetValue(Key(text), out var cached))
+        {
+            StartCoroutine(PlayCached(cached, onComplete));
+            return;
+        }
         StartCoroutine(SpeakCo(text, onComplete));
     }
+
+    IEnumerator PlayCached(AudioClip clip, Action done)
+    {
+        IsSpeaking = true;
+        _src.clip = clip;
+        _src.Play();
+        yield return new WaitWhile(() => _src.isPlaying);
+        IsSpeaking = false;
+        done?.Invoke();
+    }
+
+
+
 
     IEnumerator SpeakCo(string text, Action done)
     {
@@ -210,6 +233,10 @@ public class CrossPlatformTTS : MonoBehaviour
                 done?.Invoke(); yield break;
             }
             var clip = UnityEngine.Networking.DownloadHandlerAudioClip.GetContent(req);
+
+            // cache it BEFORE playing
+            _cache[Key(text)] = clip;
+
             _src.clip = clip;
             IsSpeaking = true;
             _src.Play();
