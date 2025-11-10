@@ -171,6 +171,8 @@ public class CrossPlatformTTS : MonoBehaviour
         StartCoroutine(SpeakCo(text, onComplete));
     }
 
+    public static void ClearCache() => _cache.Clear();
+
     IEnumerator PlayCached(AudioClip clip, Action done)
     {
         IsSpeaking = true;
@@ -182,9 +184,16 @@ public class CrossPlatformTTS : MonoBehaviour
     }
 
 
+    public void Prepare(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return;
+        if (_cache.ContainsKey(Key(text))) return;
+        StartCoroutine(SpeakCo(text, null, prepareOnly: true));
+    }
 
 
-    IEnumerator SpeakCo(string text, Action done)
+
+    IEnumerator SpeakCo(string text, Action done, bool prepareOnly = false)
     {
         string exe = ResolvePiperExe();
         if (exe == null) { UDebug.LogError("Piper executable not found."); done?.Invoke(); yield break; }
@@ -219,7 +228,10 @@ public class CrossPlatformTTS : MonoBehaviour
             // string err = p.StandardError.ReadToEnd();
             // if (!string.IsNullOrEmpty(err)) UDebug.LogWarning(err);
 
-            p.WaitForExit();
+            //p.WaitForExit();
+            // Non-blocking wait inside coroutine:
+            while (!p.HasExited)
+                yield return null;
         }
 
         if (!File.Exists(wavPath)) { UDebug.LogError("Piper did not produce a WAV."); done?.Invoke(); yield break; }
@@ -234,14 +246,17 @@ public class CrossPlatformTTS : MonoBehaviour
             }
             var clip = UnityEngine.Networking.DownloadHandlerAudioClip.GetContent(req);
 
-            // cache it BEFORE playing
+            // cache
             _cache[Key(text)] = clip;
 
-            _src.clip = clip;
-            IsSpeaking = true;
-            _src.Play();
-            yield return new WaitWhile(() => _src.isPlaying);
-            IsSpeaking = false;
+            if (!prepareOnly)
+            {
+                _src.clip = clip;
+                IsSpeaking = true;
+                _src.Play();
+                yield return new WaitWhile(() => _src.isPlaying);
+                IsSpeaking = false;
+            }
         }
 
         try { File.Delete(wavPath); } catch { }

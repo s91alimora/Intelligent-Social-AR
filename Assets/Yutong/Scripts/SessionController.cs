@@ -22,7 +22,7 @@ public class SessionController : MonoBehaviour
 
     [Header("Header Question UI (TMP)")]
     public Graphic headerBackground;
-    public Text headerTextTMP;
+    public Text headerTextTMP;  
 
     // ===== Data containers parsed from JSON =====
     [Serializable]
@@ -30,6 +30,7 @@ public class SessionController : MonoBehaviour
     {
         public string version = "1.0";
         public GridSpec grid = new GridSpec();
+        public List<string> grid_label = new List<string>();
         public float defaultWaitSec = 1f;
         public float moveDurationSec = 2f;
         public string headerQuestion = "";
@@ -79,13 +80,14 @@ public class SessionController : MonoBehaviour
     int _stage = 0; // 0=not started, 1=header shown, 2=moved, 3=playing/played
     bool _playing;
 
-    // --- Add alongside your existing Root/ScriptLine (keep them) ---
+    // --- Also support array form for text ---
     [Serializable] class ScriptLineAlt { public string agent; public List<string> text; public float waitSec = -1f; }
     [Serializable]
     class RootAlt
     {
         public string version = "1.0";
         public GridSpec grid = new GridSpec();
+        public List<string> grid_label = new List<string>();
         public float defaultWaitSec = 1f;
         public float moveDurationSec = 2f;
         public string headerQuestion = "";
@@ -105,17 +107,28 @@ public class SessionController : MonoBehaviour
             moveDurationSec = alt.moveDurationSec,
             headerQuestion = alt.headerQuestion,
             staging = alt.staging,
-            agents = alt.agents
+            agents = alt.agents,
+            grid_label = alt.grid_label
         };
         r.script = new List<ScriptLine>(alt.script.Count);
         foreach (var s in alt.script)
         {
-            var joined = (s.text == null) ? "" : string.Join(" ", s.text);
-            r.script.Add(new ScriptLine { agent = s.agent, text = joined, waitSec = s.waitSec });
+            var joined = (s.text == null || s.text.Count == 0)
+                ? ""
+                : string.Join(" ", s.text.Where(t => !string.IsNullOrWhiteSpace(t)).Select(t => t.Trim()));
+            r.script.Add(new ScriptLine { agent = s.agent, text = Normalize(joined), waitSec = s.waitSec });
         }
         return r;
     }
 
+    // -------- Helpers --------
+    static string Normalize(string s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return s;
+        s = s.Replace("\r", " ").Replace("\n", " ");
+        while (s.Contains("  ")) s = s.Replace("  ", " ");
+        return s.Trim();
+    }
 
     // ---------- Lifecycle ----------
 
@@ -154,7 +167,7 @@ public class SessionController : MonoBehaviour
             }
             else if (_stage == 1)
             {
-                SetHeaderVisible(false);
+                //SetHeaderVisible(false);
                 StartCoroutine(MoveAllToGrid(_spec.moveDurationSec));
                 _stage = 2;
             }
@@ -168,9 +181,8 @@ public class SessionController : MonoBehaviour
 
     bool AdvancePressed()
     {
-        // Quest controller (edge-triggered)
-        //if (OVRInput.GetDown(OVRInput.RawButton.RIndexTrigger))
-        //    return true;
+        // Quest controller example (edge-triggered) if you want it:
+        // if (OVRInput.GetDown(OVRInput.RawButton.RIndexTrigger)) return true;
 
         // Optional keyboard fallback when testing in editor
         if (Input.GetKeyDown(KeyCode.Space))
@@ -178,7 +190,6 @@ public class SessionController : MonoBehaviour
 
         return false;
     }
-
 
     // ---------- External runtime loading API ----------
 
@@ -220,6 +231,10 @@ public class SessionController : MonoBehaviour
             if (root != null && root.script != null && root.script.Count > 0 &&
                 !string.IsNullOrEmpty(root.script[0].text))
             {
+                // Normalize all texts once
+                foreach (var sl in root.script)
+                    sl.text = Normalize(sl.text);
+                root.headerQuestion = Normalize(root.headerQuestion);
                 _spec = root;
                 return true;
             }
@@ -228,6 +243,8 @@ public class SessionController : MonoBehaviour
             var alt = JsonUtility.FromJson<RootAlt>(json);
             if (alt != null && alt.script != null && alt.script.Count > 0)
             {
+                // Convert and Normalize done in ConvertAlt
+                alt.headerQuestion = Normalize(alt.headerQuestion);
                 _spec = ConvertAlt(alt);
                 return true;
             }
@@ -242,7 +259,6 @@ public class SessionController : MonoBehaviour
         return false;
     }
 
-
     IEnumerator BuildFromSpec()
     {
         if (_spec == null)
@@ -253,6 +269,9 @@ public class SessionController : MonoBehaviour
         _stage = 0;
         _built = false;
 
+        // Clear any cached TTS audio from a previous run (prevents odd artifacts)
+        CrossPlatformTTS.ClearCache();
+
         // 1) Grid
         if (gridGenerator == null) gridGenerator = FindObjectOfType<GridGenerator>();
         if (gridGenerator == null)
@@ -261,6 +280,13 @@ public class SessionController : MonoBehaviour
             yield break;
         }
         gridGenerator.Build(_spec.grid.rows, _spec.grid.cols);
+
+        if (_spec.grid_label != null && _spec.grid_label.Count > 0)
+        {
+            if (_spec.grid_label.Count != _spec.grid.cols)
+                Debug.LogWarning($"grid_label count ({_spec.grid_label.Count}) != cols ({_spec.grid.cols}). Using the first {Mathf.Min(_spec.grid_label.Count, _spec.grid.cols)}.");
+            gridGenerator.BuildColumnLabels(_spec.grid_label);
+        }
 
         // 2) Agents lined up
         if (agentGenerator == null) agentGenerator = FindObjectOfType<AgentGenerator>();
@@ -328,8 +354,7 @@ public class SessionController : MonoBehaviour
         _built = false;
         SetHeaderVisible(false);
 
-        // Rebuild grid if your GridGenerator exposes a clear; otherwise next Build will overwrite.
-        // Example:
+        // Optionally clear grid here if your GridGenerator exposes a Clear()
         // gridGenerator.Clear();
     }
 
@@ -381,7 +406,10 @@ public class SessionController : MonoBehaviour
         {
             var list = agentToLines[line.agent];
             int idx = list.Count;
-            list.Add(line.text);
+
+            // Normalize again for safety (in case text came from dynamic sources later)
+            var clean = Normalize(line.text);
+            list.Add(clean);
 
             if (_idToAgent.TryGetValue(line.agent, out var agentComp))
                 steps.Add(new ConversationStep { agent = agentComp, sentenceIndex = idx });
@@ -435,13 +463,24 @@ public class SessionController : MonoBehaviour
 
                 bool done = false;
                 comp.Speak(sentenceIndex, () => done = true);
+
+                // PREFETCH next line's audio (normalize before prefetch)
+                if (i + 1 < _spec.script.Count)
+                {
+                    var next = _spec.script[i + 1];
+                    if (_idToAgent.TryGetValue(next.agent, out var nextComp))
+                    {
+                        var nextIdx = steps[i + 1].sentenceIndex;
+                        var nextText = Normalize(nextComp.GetSentence(nextIdx));
+                        nextComp.GetComponent<CrossPlatformTTS>()?.Prepare(nextText);
+                    }
+                }
+
                 while (!done) yield return null;
 
                 float wait = (line.waitSec >= 0f) ? line.waitSec : Mathf.Max(0f, _spec.defaultWaitSec);
                 if (wait > 0f && i < _spec.script.Count - 1)
                     yield return new WaitForSeconds(wait);
-
-
             }
         }
 

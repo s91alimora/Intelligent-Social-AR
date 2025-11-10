@@ -1,20 +1,34 @@
-// GridGenerator.cs
 using System.Collections.Generic;
 using UnityEngine;
+//using TMPro;
+
 
 [DisallowMultipleComponent]
 public class GridGenerator : MonoBehaviour
 {
     [Header("Layout")]
     public float cellSize = 1.2f;
-    public Vector3 origin = Vector3.zero;     // world position of cell (0,0) center
+    public Vector3 origin = Vector3.zero;  // world position of cell (0,0) center
 
     [Header("Rendering")]
     public Color lineColor = new Color(0.25f, 0.25f, 0.25f, 1f);
     public float lineWidth = 0.02f;
 
+    [Header("Column Labels (TextMesh)")]
+    public bool showColumnLabels = true;
+    public float labelY = 0.02f;                       // slight lift above grid
+    public Vector3 labelRotationEuler = new Vector3(90f, 0f, 0f); // face up
+    public float labelScale = 0.25f;                   // transform scale
+
+    public Font labelFontLegacy;                       // assign any readable font
+    public int labelFontSize = 64;                     // mesh resolution
+    public float labelCharacterSize = 0.12f;           // world size per glyph
+    public Color labelColor = Color.black;
+
+
     int _rows, _cols;
     readonly List<LineRenderer> _lines = new();
+    readonly List<TextMesh> _labels = new();
 
     public void Build(int rows, int cols)
     {
@@ -22,10 +36,7 @@ public class GridGenerator : MonoBehaviour
         _cols = Mathf.Max(1, cols);
 
         ClearLines();
-
-        // Outer bounds (top-left corner)
-        var half = new Vector3(cellSize * 0.5f, 0f, cellSize * 0.5f);
-        var topLeft = origin - new Vector3(0, 0, 0) - half;
+        ClearLabels();
 
         // Draw verticals (cols+1)
         for (int c = 0; c <= _cols; c++)
@@ -43,9 +54,54 @@ public class GridGenerator : MonoBehaviour
         }
     }
 
+    public void BuildColumnLabels(List<string> labels)
+    {
+        ClearLabels();
+        if (!showColumnLabels) return;
+        if (labels == null || labels.Count == 0) return;
+
+        int count = Mathf.Min(labels.Count, _cols);
+        for (int c = 0; c < count; c++)
+        {
+            string txt = labels[c] ?? "";
+            var pos = GridToWorld(c, -1) + new Vector3(0f, labelY, 0f);
+
+            var go = new GameObject($"grid-label-{c}");
+            go.transform.SetParent(transform, false);
+            go.transform.position = pos;
+            go.transform.rotation = Quaternion.Euler(labelRotationEuler);
+            go.transform.localScale = Vector3.one * labelScale;
+
+            var tm = go.AddComponent<TextMesh>();  // Legacy TextMesh
+            tm.text = txt;
+            tm.anchor = TextAnchor.MiddleCenter;
+            tm.alignment = TextAlignment.Center;
+
+            if (labelFontLegacy != null)
+            {
+                tm.font = labelFontLegacy;
+                var mr = go.GetComponent<MeshRenderer>();
+                if (labelFontLegacy.material != null) mr.sharedMaterial = labelFontLegacy.material;
+            }
+
+            tm.fontSize = Mathf.Max(1, labelFontSize);
+            tm.characterSize = Mathf.Max(0.001f, labelCharacterSize);
+            tm.color = labelColor;
+
+            var rend = go.GetComponent<MeshRenderer>();
+            if (rend != null && rend.sharedMaterial != null)
+            {
+                rend.material = new Material(rend.sharedMaterial);
+                rend.material.color = labelColor;
+            }
+
+            _labels.Add(tm);   // now types match
+        }
+    }
+
     public Vector3 GridToWorld(int row, int col)
     {
-        // Allow -1 row (used for staging default)
+        // Allow -1 row (used for staging/labels)
         float r = row + 0.0f;
         float c = col + 0.0f;
         return origin + new Vector3(c * cellSize, 0f, r * cellSize);
@@ -70,4 +126,11 @@ public class GridGenerator : MonoBehaviour
         foreach (var lr in _lines) if (lr) Destroy(lr.gameObject);
         _lines.Clear();
     }
+
+    void ClearLabels()
+    {
+        foreach (var t in _labels) if (t) Destroy(t.gameObject);
+        _labels.Clear();
+    }
+
 }
