@@ -55,7 +55,6 @@ public class AgentUI : MonoBehaviour
             _panelImage.type = panelSprite ? Image.Type.Sliced : Image.Type.Simple;
 
             var ca = GetComponent<ConversationalAgent>();
-            _panelImage.color = preferred ?? (ca ? ca.speakingColor : fallbackColor);
         }
 
         // size + position (re-applied every time)

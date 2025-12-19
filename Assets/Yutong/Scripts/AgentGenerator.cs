@@ -39,13 +39,13 @@ public class AgentGenerator : MonoBehaviour
 
         var agent = go.AddComponent<ConversationalAgent>();
         agent.agentName = id;
-        agent.speakingRenderer = go.GetComponent<Renderer>();
-        if (wrapper.color != null && wrapper.color.Length >= 3)
-        {
-            var col = new Color(wrapper.color[0], wrapper.color[1], wrapper.color[2],
-                                wrapper.color.Length > 3 ? wrapper.color[3] : 1f);
-            agent.speakingColor = col;
-        }
+        //agent.speakingRenderer = go.GetComponent<Renderer>();
+        //if (wrapper.color != null && wrapper.color.Length >= 3)
+        //{
+        //    var col = new Color(wrapper.color[0], wrapper.color[1], wrapper.color[2],
+        //                        wrapper.color.Length > 3 ? wrapper.color[3] : 1f);
+        //    agent.speakingColor = col;
+        //}
         return go;
     }
 
