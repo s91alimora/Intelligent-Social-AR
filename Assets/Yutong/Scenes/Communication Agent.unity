@@ -172,7 +172,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 4802957c899544c46b2cd435595303bb, type: 3}
       propertyPath: m_Name
-      value: Male_Adult_02_facial
+      value: Tony
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -184,6 +184,21 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4802957c899544c46b2cd435595303bb, type: 3}
       insertIndex: -1
       addedObject: {fileID: 326701633}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4802957c899544c46b2cd435595303bb, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 326701637}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4802957c899544c46b2cd435595303bb, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 326701636}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4802957c899544c46b2cd435595303bb, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 326701635}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4802957c899544c46b2cd435595303bb, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 326701634}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4802957c899544c46b2cd435595303bb, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 326701638}
     - targetCorrespondingSourceObject: {fileID: -553741136928222007, guid: 4802957c899544c46b2cd435595303bb, type: 3}
       insertIndex: -1
       addedObject: {fileID: 326701631}
@@ -345,6 +360,98 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &326701634
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 326701630}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4f7f242c1aaa4748822d6d73819eb76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  agentName: Tony
+  sentences:
+  - Hello, this is Tony, it is very nice to meet you!
+--- !u!114 &326701635
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 326701630}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4be45e05809b3f4ab4d9ba5124ff327, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  modelFileName: test_voice.onnx
+  lengthScale: 1
+  noiseScale: 0.33
+  extraArgs: 
+--- !u!114 &326701636
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 326701630}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0b97b38f2f1fd24185315141a6c6a56, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skinnedMeshRenderer: {fileID: 326701629}
+  visemeToBlendTargets: 000000000100000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d0000000e000000
+  enableVisemeTestKeys: 0
+  visemeTestKeys: 600000000900000071000000770000006500000072000000740000007900000075000000690000006f000000700000005b0000005d0000005c000000
+  laughterKey: 301
+  laughterBlendTarget: 15
+  laughterThreshold: 0.5
+  laughterMultiplier: 1.5
+  smoothAmount: 70
+--- !u!114 &326701637
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 326701630}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f43c520a9bad8a3489109c869f454576, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  audioSource: {fileID: 326701633}
+  provider: 1
+  enableAcceleration: 1
+  enableKeyboardInput: 0
+  enableTouchInput: 0
+  audioLoopback: 0
+  loopbackKey: 108
+  showVisemes: 0
+  debugVisemesKey: 100
+  skipAudioSource: 0
+  gain: 1
+  debugLaughterKey: 104
+  showLaughter: 0
+  laughterScore: 0
+--- !u!114 &326701638
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 326701630}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4ddf0c40da4a61439d8a2342692d5e6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  lipSyncContext: {fileID: 326701637}
+  morphTargetHandler: {fileID: 326701636}
 --- !u!1 &354860535
 GameObject:
   m_ObjectHideFlags: 0
@@ -621,7 +728,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 4a5c0aff03596c844b128021a524b16a, type: 3}
       propertyPath: m_Name
-      value: Male_Adult_03_facial
+      value: Arctic
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -630,6 +737,24 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4a5c0aff03596c844b128021a524b16a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 642850917}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4a5c0aff03596c844b128021a524b16a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 642850922}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4a5c0aff03596c844b128021a524b16a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 642850921}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4a5c0aff03596c844b128021a524b16a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 642850920}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4a5c0aff03596c844b128021a524b16a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 642850919}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4a5c0aff03596c844b128021a524b16a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 642850924}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4a5c0aff03596c844b128021a524b16a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 642850923}
     - targetCorrespondingSourceObject: {fileID: 558236501235935795, guid: 4a5c0aff03596c844b128021a524b16a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 642850916}
@@ -695,6 +820,194 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &642850919
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 642850915}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4be45e05809b3f4ab4d9ba5124ff327, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  modelFileName: arctic_man.onnx
+  lengthScale: 1
+  noiseScale: 0.33
+  extraArgs: 
+--- !u!114 &642850920
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 642850915}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0b97b38f2f1fd24185315141a6c6a56, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skinnedMeshRenderer: {fileID: 642850914}
+  visemeToBlendTargets: 000000000100000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d0000000e000000
+  enableVisemeTestKeys: 0
+  visemeTestKeys: 600000000900000071000000770000006500000072000000740000007900000075000000690000006f000000700000005b0000005d0000005c000000
+  laughterKey: 301
+  laughterBlendTarget: 15
+  laughterThreshold: 0.5
+  laughterMultiplier: 1.5
+  smoothAmount: 70
+--- !u!114 &642850921
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 642850915}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f43c520a9bad8a3489109c869f454576, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  audioSource: {fileID: 642850922}
+  provider: 1
+  enableAcceleration: 1
+  enableKeyboardInput: 0
+  enableTouchInput: 0
+  audioLoopback: 0
+  loopbackKey: 108
+  showVisemes: 0
+  debugVisemesKey: 100
+  skipAudioSource: 0
+  gain: 1
+  debugLaughterKey: 104
+  showLaughter: 0
+  laughterScore: 0
+--- !u!82 &642850922
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 642850915}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+--- !u!114 &642850923
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 642850915}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4ddf0c40da4a61439d8a2342692d5e6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  lipSyncContext: {fileID: 642850921}
+  morphTargetHandler: {fileID: 642850920}
+--- !u!114 &642850924
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 642850915}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4f7f242c1aaa4748822d6d73819eb76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  agentName: Arctic
+  sentences:
+  - Hello, this is Arctic, it is very nice to meet you
 --- !u!1 &719974244
 GameObject:
   m_ObjectHideFlags: 0
@@ -1801,7 +2114,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: c307790307e7fcf4d8f583609339d736, type: 3}
       propertyPath: m_Name
-      value: Female_Adult_03_facial
+      value: Amy
       objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: c307790307e7fcf4d8f583609339d736, type: 3}
       propertyPath: m_Avatar
@@ -2036,7 +2349,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c4f7f242c1aaa4748822d6d73819eb76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  agentName: female_2
+  agentName: Amy
   sentences:
   - 'Hello, I''m kelly. So nice to meet you. What a loveley day. '
 --- !u!114 &1923514869
@@ -2182,7 +2495,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: b3548f4e78bf6ae4497dfdb8bf096166, type: 3}
       propertyPath: m_Name
-      value: Female_Adult_01_facial
+      value: Kristin
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -2429,7 +2742,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c4f7f242c1aaa4748822d6d73819eb76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  agentName: female_1
+  agentName: Kristin
   sentences:
   - 'Hi, this is kristin, nice to meet you. I would love to have some hot tea please. '
 --- !u!114 &2023608025
@@ -2444,7 +2757,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d4be45e05809b3f4ab4d9ba5124ff327, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  modelFileName: arctic.onnx
+  modelFileName: kristin.onnx
   lengthScale: 1
   noiseScale: 0.33
   extraArgs: 
@@ -2494,7 +2807,13 @@ MonoBehaviour:
   agents:
   - {fileID: 2023608024}
   - {fileID: 1923514868}
+  - {fileID: 326701634}
+  - {fileID: 642850924}
   sequence:
+  - agent: {fileID: 642850924}
+    sentenceIndex: 0
+  - agent: {fileID: 326701634}
+    sentenceIndex: 0
   - agent: {fileID: 2023608024}
     sentenceIndex: 0
   - agent: {fileID: 1923514868}
