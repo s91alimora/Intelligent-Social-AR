@@ -1,0 +1,380 @@
+﻿=== Alan Entity ===
+Found component IDs: ['846699581', '846699580', '846699579', '846699578', '846699577', '846699576']
+
+--- Component 846699581 at line 2984 ---
+--- !u!95 &846699581
+Animator:
+serializedVersion: 5
+m_ObjectHideFlags: 0
+m_CorrespondingSourceObject: {fileID: 0}
+m_PrefabInstance: {fileID: 0}
+m_PrefabAsset: {fileID: 0}
+m_GameObject: {fileID: 846699575}
+m_Enabled: 1
+m_Avatar: {fileID: 9000000, guid: af5718f4d6320b74f8cb68fb4b228cb7, type: 3}
+m_Controller: {fileID: 9100000, guid: f9016acedf26571478076187dd4557c5, type: 2}
+m_CullingMode: 0
+m_UpdateMode: 0
+m_ApplyRootMotion: 0
+m_LinearVelocityBlending: 0
+m_StabilizeFeet: 0
+m_WarningMessage:
+m_HasTransformHierarchy: 1
+m_AllowConstantClipSamplingOptimization: 1
+m_KeepAnimatorStateOnDisable: 0
+m_WriteDefaultValuesOnDisable: 0
+--- !u!1 &907798025
+
+--- Component 846699580 at line 2888 ---
+--- !u!82 &846699580
+AudioSource:
+m_ObjectHideFlags: 0
+m_CorrespondingSourceObject: {fileID: 0}
+m_PrefabInstance: {fileID: 0}
+m_PrefabAsset: {fileID: 0}
+m_GameObject: {fileID: 846699575}
+m_Enabled: 1
+serializedVersion: 4
+OutputAudioMixerGroup: {fileID: 0}
+m_audioClip: {fileID: 0}
+m_PlayOnAwake: 0
+m_Volume: 1
+m_Pitch: 1
+Loop: 0
+Mute: 0
+Spatialize: 0
+SpatializePostEffects: 0
+Priority: 128
+DopplerLevel: 1
+MinDistance: 1
+MaxDistance: 500
+Pan2D: 0
+rolloffMode: 0
+BypassEffects: 0
+BypassListenerEffects: 0
+BypassReverbZones: 0
+rolloffCustomCurve:
+serializedVersion: 2
+m_Curve:
+
+--- Component 846699579 at line 2862 ---
+--- !u!114 &846699579
+MonoBehaviour:
+m_ObjectHideFlags: 0
+m_CorrespondingSourceObject: {fileID: 0}
+m_PrefabInstance: {fileID: 0}
+m_PrefabAsset: {fileID: 0}
+m_GameObject: {fileID: 846699575}
+m_Enabled: 1
+m_EditorHideFlags: 0
+m_Script: {fileID: 11500000, guid: f43c520a9bad8a3489109c869f454576, type: 3}
+m_Name:
+m_EditorClassIdentifier:
+audioSource: {fileID: 846699580}
+provider: 1
+enableAcceleration: 1
+enableKeyboardInput: 0
+enableTouchInput: 0
+audioLoopback: 0
+loopbackKey: 108
+showVisemes: 0
+debugVisemesKey: 100
+skipAudioSource: 0
+gain: 1
+debugLaughterKey: 104
+showLaughter: 0
+laughterScore: 0
+--- !u!82 &846699580
+AudioSource:
+m_ObjectHideFlags: 0
+m_CorrespondingSourceObject: {fileID: 0}
+
+--- Component 846699578 at line 2841 ---
+--- !u!114 &846699578
+MonoBehaviour:
+m_ObjectHideFlags: 0
+m_CorrespondingSourceObject: {fileID: 0}
+m_PrefabInstance: {fileID: 0}
+m_PrefabAsset: {fileID: 0}
+m_GameObject: {fileID: 846699575}
+m_Enabled: 1
+m_EditorHideFlags: 0
+m_Script: {fileID: 11500000, guid: b0b97b38f2f1fd24185315141a6c6a56, type: 3}
+m_Name:
+m_EditorClassIdentifier:
+skinnedMeshRenderer: {fileID: 846699574}
+visemeToBlendTargets: 000000000100000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d0000000e000000
+enableVisemeTestKeys: 0
+visemeTestKeys: 600000000900000071000000770000006500000072000000740000007900000075000000690000006f000000700000005b0000005d0000005c000000
+laughterKey: 301
+laughterBlendTarget: 15
+laughterThreshold: 0.5
+laughterMultiplier: 1.5
+smoothAmount: 70
+--- !u!114 &846699579
+MonoBehaviour:
+m_ObjectHideFlags: 0
+m_CorrespondingSourceObject: {fileID: 0}
+m_PrefabInstance: {fileID: 0}
+m_PrefabAsset: {fileID: 0}
+m_GameObject: {fileID: 846699575}
+m_Enabled: 1
+m_EditorHideFlags: 0
+
+--- Component 846699577 at line 2825 ---
+--- !u!114 &846699577
+MonoBehaviour:
+m_ObjectHideFlags: 0
+m_CorrespondingSourceObject: {fileID: 0}
+m_PrefabInstance: {fileID: 0}
+m_PrefabAsset: {fileID: 0}
+m_GameObject: {fileID: 846699575}
+m_Enabled: 1
+m_EditorHideFlags: 0
+m_Script: {fileID: 11500000, guid: d4be45e05809b3f4ab4d9ba5124ff327, type: 3}
+m_Name:
+m_EditorClassIdentifier:
+modelFileName: alan.onnx
+lengthScale: 1
+noiseScale: 0.33
+extraArgs:
+--- !u!114 &846699578
+MonoBehaviour:
+m_ObjectHideFlags: 0
+m_CorrespondingSourceObject: {fileID: 0}
+m_PrefabInstance: {fileID: 0}
+m_PrefabAsset: {fileID: 0}
+m_GameObject: {fileID: 846699575}
+m_Enabled: 1
+m_EditorHideFlags: 0
+m_Script: {fileID: 11500000, guid: b0b97b38f2f1fd24185315141a6c6a56, type: 3}
+m_Name:
+m_EditorClassIdentifier:
+skinnedMeshRenderer: {fileID: 846699574}
+visemeToBlendTargets: 000000000100000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d0000000e000000
+
+--- Component 846699576 at line 2807 ---
+--- !u!114 &846699576
+MonoBehaviour:
+m_ObjectHideFlags: 0
+m_CorrespondingSourceObject: {fileID: 0}
+m_PrefabInstance: {fileID: 0}
+m_PrefabAsset: {fileID: 0}
+m_GameObject: {fileID: 846699575}
+m_Enabled: 1
+m_EditorHideFlags: 0
+m_Script: {fileID: 11500000, guid: c4f7f242c1aaa4748822d6d73819eb76, type: 3}
+m_Name:
+m_EditorClassIdentifier:
+agentName: Alan
+sentences:
+- Hi this is Alan, I'm the main character in Attack on Titan and I can turn into
+a giant. My dream is to destroy the world. How about you?
+animator: {fileID: 846699581}
+isTalkingParameter: isTalking
+--- !u!114 &846699577
+MonoBehaviour:
+m_ObjectHideFlags: 0
+m_CorrespondingSourceObject: {fileID: 0}
+m_PrefabInstance: {fileID: 0}
+m_PrefabAsset: {fileID: 0}
+m_GameObject: {fileID: 846699575}
+m_Enabled: 1
+m_EditorHideFlags: 0
+m_Script: {fileID: 11500000, guid: d4be45e05809b3f4ab4d9ba5124ff327, type: 3}
+m_Name:
+m_EditorClassIdentifier:
+=== Jenny Entity ===
+Found component IDs: ['1953645341', '1953645340', '1953645339', '1953645338', '1953645343', '1953645342']
+
+--- Component 1953645341 at line 6266 ---
+--- !u!95 &1953645341
+Animator:
+serializedVersion: 5
+m_ObjectHideFlags: 0
+m_CorrespondingSourceObject: {fileID: 0}
+m_PrefabInstance: {fileID: 0}
+m_PrefabAsset: {fileID: 0}
+m_GameObject: {fileID: 1953645337}
+m_Enabled: 1
+m_Avatar: {fileID: 9000000, guid: af5718f4d6320b74f8cb68fb4b228cb7, type: 3}
+m_Controller: {fileID: 9100000, guid: f34d84f1cfaa9084a9f94b91b9a93487, type: 2}
+m_CullingMode: 0
+m_UpdateMode: 0
+m_ApplyRootMotion: 0
+m_LinearVelocityBlending: 0
+m_StabilizeFeet: 0
+m_WarningMessage:
+m_HasTransformHierarchy: 1
+m_AllowConstantClipSamplingOptimization: 1
+m_KeepAnimatorStateOnDisable: 0
+m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &1953645342
+MonoBehaviour:
+m_ObjectHideFlags: 0
+m_CorrespondingSourceObject: {fileID: 0}
+m_PrefabInstance: {fileID: 0}
+m_PrefabAsset: {fileID: 0}
+m_GameObject: {fileID: 1953645337}
+m_Enabled: 1
+m_EditorHideFlags: 0
+
+--- Component 1953645340 at line 6170 ---
+--- !u!82 &1953645340
+AudioSource:
+m_ObjectHideFlags: 0
+m_CorrespondingSourceObject: {fileID: 0}
+m_PrefabInstance: {fileID: 0}
+m_PrefabAsset: {fileID: 0}
+m_GameObject: {fileID: 1953645337}
+m_Enabled: 1
+serializedVersion: 4
+OutputAudioMixerGroup: {fileID: 0}
+m_audioClip: {fileID: 0}
+m_PlayOnAwake: 0
+m_Volume: 1
+m_Pitch: 1
+Loop: 0
+Mute: 0
+Spatialize: 0
+SpatializePostEffects: 0
+Priority: 128
+DopplerLevel: 1
+MinDistance: 1
+MaxDistance: 500
+Pan2D: 0
+rolloffMode: 0
+BypassEffects: 0
+BypassListenerEffects: 0
+BypassReverbZones: 0
+rolloffCustomCurve:
+serializedVersion: 2
+m_Curve:
+
+--- Component 1953645339 at line 6144 ---
+--- !u!114 &1953645339
+MonoBehaviour:
+m_ObjectHideFlags: 0
+m_CorrespondingSourceObject: {fileID: 0}
+m_PrefabInstance: {fileID: 0}
+m_PrefabAsset: {fileID: 0}
+m_GameObject: {fileID: 1953645337}
+m_Enabled: 1
+m_EditorHideFlags: 0
+m_Script: {fileID: 11500000, guid: f43c520a9bad8a3489109c869f454576, type: 3}
+m_Name:
+m_EditorClassIdentifier:
+audioSource: {fileID: 1953645340}
+provider: 1
+enableAcceleration: 1
+enableKeyboardInput: 0
+enableTouchInput: 0
+audioLoopback: 0
+loopbackKey: 108
+showVisemes: 0
+debugVisemesKey: 100
+skipAudioSource: 0
+gain: 1
+debugLaughterKey: 104
+showLaughter: 0
+laughterScore: 0
+--- !u!82 &1953645340
+AudioSource:
+m_ObjectHideFlags: 0
+m_CorrespondingSourceObject: {fileID: 0}
+
+--- Component 1953645338 at line 6123 ---
+--- !u!114 &1953645338
+MonoBehaviour:
+m_ObjectHideFlags: 0
+m_CorrespondingSourceObject: {fileID: 0}
+m_PrefabInstance: {fileID: 0}
+m_PrefabAsset: {fileID: 0}
+m_GameObject: {fileID: 1953645337}
+m_Enabled: 1
+m_EditorHideFlags: 0
+m_Script: {fileID: 11500000, guid: b0b97b38f2f1fd24185315141a6c6a56, type: 3}
+m_Name:
+m_EditorClassIdentifier:
+skinnedMeshRenderer: {fileID: 1953645336}
+visemeToBlendTargets: 000000000100000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d0000000e000000
+enableVisemeTestKeys: 0
+visemeTestKeys: 600000000900000071000000770000006500000072000000740000007900000075000000690000006f000000700000005b0000005d0000005c000000
+laughterKey: 301
+laughterBlendTarget: 15
+laughterThreshold: 0.5
+laughterMultiplier: 1.5
+smoothAmount: 70
+--- !u!114 &1953645339
+MonoBehaviour:
+m_ObjectHideFlags: 0
+m_CorrespondingSourceObject: {fileID: 0}
+m_PrefabInstance: {fileID: 0}
+m_PrefabAsset: {fileID: 0}
+m_GameObject: {fileID: 1953645337}
+m_Enabled: 1
+m_EditorHideFlags: 0
+
+--- Component 1953645343 at line 6305 ---
+--- !u!114 &1953645343
+MonoBehaviour:
+m_ObjectHideFlags: 0
+m_CorrespondingSourceObject: {fileID: 0}
+m_PrefabInstance: {fileID: 0}
+m_PrefabAsset: {fileID: 0}
+m_GameObject: {fileID: 1953645337}
+m_Enabled: 1
+m_EditorHideFlags: 0
+m_Script: {fileID: 11500000, guid: d4be45e05809b3f4ab4d9ba5124ff327, type: 3}
+m_Name:
+m_EditorClassIdentifier:
+modelFileName: jenny.onnx
+lengthScale: 1
+noiseScale: 0.33
+extraArgs:
+--- !u!1001 &2023608014
+PrefabInstance:
+m_ObjectHideFlags: 0
+serializedVersion: 2
+m_Modification:
+serializedVersion: 3
+m_TransformParent: {fileID: 1512000880}
+m_Modifications:
+- target: {fileID: -8679921383154817045, guid: b3548f4e78bf6ae4497dfdb8bf096166, type: 3}
+propertyPath: m_LocalPosition.x
+value: -0.37
+objectReference: {fileID: 0}
+- target: {fileID: -8679921383154817045, guid: b3548f4e78bf6ae4497dfdb8bf096166, type: 3}
+propertyPath: m_LocalPosition.y
+
+--- Component 1953645342 at line 6287 ---
+--- !u!114 &1953645342
+MonoBehaviour:
+m_ObjectHideFlags: 0
+m_CorrespondingSourceObject: {fileID: 0}
+m_PrefabInstance: {fileID: 0}
+m_PrefabAsset: {fileID: 0}
+m_GameObject: {fileID: 1953645337}
+m_Enabled: 1
+m_EditorHideFlags: 0
+m_Script: {fileID: 11500000, guid: c4f7f242c1aaa4748822d6d73819eb76, type: 3}
+m_Name:
+m_EditorClassIdentifier:
+agentName: Jenny
+sentences:
+- 'How are you doing everyone, I''m Jenny, am I stage performer, dancer, and singer
+from BlackPink, I''m gonna sing you guys like Jenny. '
+animator: {fileID: 1953645341}
+isTalkingParameter: isTalking
+--- !u!114 &1953645343
+MonoBehaviour:
+m_ObjectHideFlags: 0
+m_CorrespondingSourceObject: {fileID: 0}
+m_PrefabInstance: {fileID: 0}
+m_PrefabAsset: {fileID: 0}
+m_GameObject: {fileID: 1953645337}
+m_Enabled: 1
+m_EditorHideFlags: 0
+m_Script: {fileID: 11500000, guid: d4be45e05809b3f4ab4d9ba5124ff327, type: 3}
+m_Name:
+m_EditorClassIdentifier:
