@@ -28,6 +28,13 @@ public class ConversationalAgent : MonoBehaviour
 
     // ------------------------------------------------------------------------
 
+    [Header("Animation")]
+    [Tooltip("Animator component for controlling idle/talk states")]
+    public Animator animator;
+
+    [Tooltip("Name of the bool parameter in the Animator that controls talking state")]
+    public string isTalkingParameter = "isTalking";
+
     CrossPlatformTTS _tts;
     //MaterialPropertyBlock _mpb;
     //int _colorPropId;
@@ -79,12 +86,23 @@ public class ConversationalAgent : MonoBehaviour
             return;
         }
 
-        //SetSpeakingVisual(true);
+        // Set talking state to true
+        SetTalkingState(true);
+
         _tts.Speak(line, () =>
         {
-            //SetSpeakingVisual(false);
+            // Set talking state to false when done
+            SetTalkingState(false);
             onComplete?.Invoke();
         });
+    }
+
+    void SetTalkingState(bool isTalking)
+    {
+        if (animator != null)
+        {
+            animator.SetBool(isTalkingParameter, isTalking);
+        }
     }
 
     //void SetSpeakingVisual(bool on)
