@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.UI;
 
 [DisallowMultipleComponent]
 public class SessionController : MonoBehaviour
@@ -133,6 +132,7 @@ public class SessionController : MonoBehaviour
         // Phase 4: AR UI
         CurrentPhase = SessionPhase.AR_UI;
         Debug.Log("SessionController: Phase 4: AR UI Enabled. Interact with agents.");
+        yield return new WaitForSeconds(0.5f); // Ensure UI/Phase state is clear
 
         // Wait for Space -> Next Trial
         Debug.Log($"SessionController: Trial {trialIndex} complete. Press Space for next.");
@@ -453,6 +453,8 @@ public class SessionController : MonoBehaviour
 
     private IEnumerator WaitForKey(KeyCode key)
     {
+        // Wait 1 frame to ensure we don't catch a GetKeyDown from the previous step
+        yield return null;
         while (!Input.GetKeyDown(key))
         {
             yield return null;
