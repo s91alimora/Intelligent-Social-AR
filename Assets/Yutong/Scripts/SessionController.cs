@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 [DisallowMultipleComponent]
 public class SessionController : MonoBehaviour
@@ -22,7 +23,8 @@ public class SessionController : MonoBehaviour
     [Header("Scene References")]
     public GridGenerator gridGenerator;
     public ConversationalAgentsManager manager;
-    public Text wallQuestionText; // Assign the text on the wall
+    //public Text wallQuestionText; // Assign the text on the wall
+    public TextMeshProUGUI wallQuestionText;
 
     [Header("Settings")]
     public float moveDuration = 2f;
