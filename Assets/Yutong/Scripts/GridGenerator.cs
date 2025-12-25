@@ -26,6 +26,9 @@ public class GridGenerator : MonoBehaviour
     public Color labelColor = Color.black;
 
 
+    public enum LabelAlignment { Bottom, Right, Left }
+    public LabelAlignment labelAlignment = LabelAlignment.Bottom;
+
     int _rows, _cols;
     readonly List<LineRenderer> _lines = new();
     readonly List<TextMesh> _labels = new();
@@ -54,19 +57,38 @@ public class GridGenerator : MonoBehaviour
         }
     }
 
-    public void BuildColumnLabels(List<string> labels)
+    public void BuildLabels(List<string> labels)
     {
         ClearLabels();
         if (!showColumnLabels) return;
         if (labels == null || labels.Count == 0) return;
 
-        int count = Mathf.Min(labels.Count, _cols);
-        for (int c = 0; c < count; c++)
+        int count = labels.Count;
+        for (int i = 0; i < count; i++)
         {
-            string txt = labels[c] ?? "";
-            var pos = GridToWorld(c, -1) + new Vector3(0f, labelY, 0f);
+            string txt = labels[i] ?? "";
+            Vector3 pos;
+            
+            if (labelAlignment == LabelAlignment.Right)
+            {
+                // Align to right side (X+), iterating rows
+                if (i >= _rows) break;
+                pos = GridToWorld(i, _cols - 1) + new Vector3(cellSize * 1.0f, labelY, 0f);
+            }
+            else if (labelAlignment == LabelAlignment.Left)
+            {
+                // Align to left side (X-), iterating rows
+                if (i >= _rows) break;
+                pos = GridToWorld(i, 0) + new Vector3(-cellSize * 1.0f, labelY, 0f);
+            }
+            else
+            {
+                // Original bottom alignment, iterating columns
+                if (i >= _cols) break;
+                pos = GridToWorld(-1, i) + new Vector3(0f, labelY, 0f); 
+            }
 
-            var go = new GameObject($"grid-label-{c}");
+            var go = new GameObject($"grid-label-{i}");
             go.transform.SetParent(transform, false);
             go.transform.position = pos;
             go.transform.rotation = Quaternion.Euler(labelRotationEuler);
@@ -95,7 +117,7 @@ public class GridGenerator : MonoBehaviour
                 rend.material.color = labelColor;
             }
 
-            _labels.Add(tm);   // now types match
+            _labels.Add(tm);
         }
     }
 

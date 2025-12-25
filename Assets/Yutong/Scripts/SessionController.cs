@@ -135,6 +135,7 @@ public class SessionController : MonoBehaviour
         Debug.Log("SessionController: Phase 4: AR UI Enabled. Interact with agents.");
 
         // Wait for Space -> Next Trial
+        Debug.Log($"SessionController: Trial {trialIndex} complete. Press Space for next.");
         yield return WaitForKey(KeyCode.Space);
 
         // Next
@@ -150,12 +151,13 @@ public class SessionController : MonoBehaviour
         foreach (var agent in _currentAgents) StopSpeakingAndDestroy(agent);
         _currentAgents.Clear();
 
-        // Build Grid (Static 4x5)
+        // Build Grid (Static 5x4)
         if (gridGenerator)
         {
-            Debug.Log("SessionController: Building Grid 4 Rows x 5 Cols");
-            gridGenerator.Build(4, 5); // Ensure 4 Rows (Depth), 5 Cols (Width)
-            gridGenerator.BuildColumnLabels(new List<string> { "Very Bad", "Bad", "Neutral", "Good", "Very Good" });
+            Debug.Log("SessionController: Building Grid 5 Rows x 4 Cols");
+            gridGenerator.labelAlignment = GridGenerator.LabelAlignment.Left;
+            gridGenerator.Build(5, 4); 
+            gridGenerator.BuildLabels(new List<string> { "Very Bad", "Bad", "Neutral", "Good", "Very Good" });
         }
 
         // Show Question
@@ -178,8 +180,8 @@ public class SessionController : MonoBehaviour
             var prefab = _agentMapping[id];
             Vector3 pos = startPos + new Vector3(0, 0, (i - 1) * lineUpSpacing); 
             
-            // FIX: Face the camera (Vector3.back) instead of right/wall
-            var go = Instantiate(prefab, pos, Quaternion.LookRotation(Vector3.back)); 
+            // FIX: Face the camera (Vector3.left) 
+            var go = Instantiate(prefab, pos, Quaternion.LookRotation(Vector3.left)); 
             go.name = id;
             var agt = go.GetComponent<ConversationalAgent>();
             if (!agt) agt = go.AddComponent<ConversationalAgent>();
@@ -198,12 +200,12 @@ public class SessionController : MonoBehaviour
         Debug.Log("SessionController: Phase 2 Moving.");
         var posConfig = _currentQuestionData.apr_Positions;
         
-        var rankToCol = new Dictionary<string, int>
+        var rankToRow = new Dictionary<string, int>
         {
             {"Very Bad", 0}, {"Bad", 1}, {"Neutral", 2}, {"Good", 3}, {"Very Good", 4}
         };
 
-        var nextRowInCol = new int[5]; // defaults to 0
+        var nextColInRow = new int[5]; // defaults to 0
         
         foreach (int agentNum in posConfig.order_Seating)
         {
@@ -216,15 +218,15 @@ public class SessionController : MonoBehaviour
             // DEBUG: Print positions to verify vs JSON
             Debug.Log($"[TRIAL DEBUG] Agent {agentNum} Target Rank: '{rank}'");
 
-            if (string.IsNullOrEmpty(rank) || !rankToCol.ContainsKey(rank))
+            if (string.IsNullOrEmpty(rank) || !rankToRow.ContainsKey(rank))
             {
                 Debug.LogWarning($"SessionController: Unknown rank '{rank}' for agent {id}");
                 continue;
             }
 
-            int col = rankToCol[rank];
-            int row = nextRowInCol[col];
-            nextRowInCol[col]++; 
+            int row = rankToRow[rank];
+            int col = nextColInRow[row];
+            nextColInRow[row]++; 
 
             Vector3 target = gridGenerator ? gridGenerator.GridToWorld(row, col) : agent.transform.position;
             yield return MoveAgent(agent.transform, target, moveDuration);

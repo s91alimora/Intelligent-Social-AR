@@ -38,10 +38,10 @@ public class ConversationalAgentsManager : MonoBehaviour
     void Update()
     {
         // Manual kick-off with Space (only if not already playing)
-        if (!playOnStart && !_isPlaying && Input.GetKeyDown(KeyCode.Space))
-        {
-            _running = StartCoroutine(PlayConversation());
-        }
+        // if (!playOnStart && !_isPlaying && Input.GetKeyDown(KeyCode.Space))
+        // {
+        //     _running = StartCoroutine(PlayConversation());
+        // }
     }
 
     public void Play()
