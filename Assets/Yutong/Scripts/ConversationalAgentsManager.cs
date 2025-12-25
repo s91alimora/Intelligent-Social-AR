@@ -60,6 +60,8 @@ public class ConversationalAgentsManager : MonoBehaviour
         _isPlaying = false;
     }
 
+    public bool IsPlaying => _isPlaying;
+
     public IEnumerator PlayConversation()
     {
         if (_isPlaying) yield break;

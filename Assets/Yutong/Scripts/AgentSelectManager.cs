@@ -26,6 +26,14 @@ public class AgentSelectManager : MonoBehaviour
     {
         if (!rayInteractor) return;
 
+        // NEW: Only allow UI interaction if we are in the AR_UI phase
+        if (SessionController.Instance == null || 
+            SessionController.Instance.CurrentPhase != SessionController.SessionPhase.AR_UI)
+        {
+            HideCurrent();
+            return;
+        }
+
         Ray ray = rayInteractor.Ray;
         if (Physics.Raycast(ray, out var hit, maxRayDistance, agentLayers, QueryTriggerInteraction.Ignore)
             && hit.collider.CompareTag("Agent"))

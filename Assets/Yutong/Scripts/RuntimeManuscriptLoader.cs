@@ -17,13 +17,14 @@ public class RuntimeManuscriptLoader : MonoBehaviour
     public SessionController sessionController;
 
     [Header("Optional simple on-screen UI")]
-    public bool showOverlayUI = true;
+    public bool showOverlayUI = false;
 
     string _lastPath = "";
     string _status = "No file loaded.";
 
     void Awake()
     {
+        showOverlayUI = false; // Force hide UI as requested
         if (sessionController == null)
             sessionController = FindObjectOfType<SessionController>();
     }
@@ -39,7 +40,7 @@ public class RuntimeManuscriptLoader : MonoBehaviour
         GUILayout.Label("<b>Load Session Manuscript (JSON)</b>", Rich());
 
         GUILayout.BeginHorizontal();
-        if (GUILayout.Button("Pick JSON¡­", GUILayout.Width(120)))
+        if (GUILayout.Button("Pick JSONâ€¦", GUILayout.Width(120)))
         {
             string path = PickJsonPath();
             if (!string.IsNullOrEmpty(path))
@@ -54,7 +55,7 @@ public class RuntimeManuscriptLoader : MonoBehaviour
 
         GUILayout.Space(6);
 
-        // Fallback manual path entry (useful if SFB not present in builds)
+        // Fallback manual path entry
         GUILayout.BeginHorizontal();
         GUILayout.Label("Path:", GUILayout.Width(40));
         _lastPath = GUILayout.TextField(_lastPath);
@@ -92,7 +93,8 @@ public class RuntimeManuscriptLoader : MonoBehaviour
             return;
         }
 
-        _status = "Loading¡­";
+        _status = "Loadingâ€¦";
+        // Call the compatibility method
         sessionController.InitializeFromJsonPath(path);
         _status = "<color=#6c6>Loaded.</color>";
     }
@@ -105,13 +107,12 @@ public class RuntimeManuscriptLoader : MonoBehaviour
         // Standalone build
         try
         {
-#if SFB_FOUND // if you define a scripting symbol when SFB is imported
+#if SFB_FOUND 
             var extensions = new[] { new ExtensionFilter("JSON", "json") };
             var paths = StandaloneFileBrowser.OpenFilePanel("Select Session JSON", "", extensions, false);
             if (paths != null && paths.Length > 0) return paths[0];
             return null;
 #else
-            // If you didn't import SFB, we just return null and rely on the manual text field
             return null;
 #endif
         }

@@ -3580,12 +3580,34 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 59fab1a6f0e5c584ea001c0879943945, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  screenplayJson: {fileID: 0}
+  scriptFiles:
+  - {fileID: 4900000, guid: 9f1d632566618144ba1e70cf9bb86fb9, type: 3}
+  - {fileID: 4900000, guid: 07a4be5873470b34589b05592db55f20, type: 3}
+  - {fileID: 4900000, guid: 1b732c95e1411334db3885b2fdd3e6a2, type: 3}
+  - {fileID: 4900000, guid: 62c06d6ab61e7a0438d7841529799198, type: 3}
+  availableMaleAvatars:
+  - {fileID: 7922142923415481630, guid: 3985594e8bb6fb84a93539203fe45467, type: 3}
+  - {fileID: 4991390485569994476, guid: 43bc4e50356b374469ec968858b2d4d4, type: 3}
+  - {fileID: 3235719855183487192, guid: 9d30703d386a075478d4d6cc9b14499e, type: 3}
+  - {fileID: 5366949334330718316, guid: 11feaa6c45ca08e46af416dc3ec94f79, type: 3}
+  - {fileID: 6966214429817358686, guid: 676670c012e422d4caa6f7aa3ca1ad0c, type: 3}
+  - {fileID: 4576866189333990526, guid: 3a211a538c61bff4db40969b2c2a4f86, type: 3}
+  - {fileID: 8708660548068843199, guid: 9efd37c35fe2ea240b82d4e5f4fd7652, type: 3}
+  - {fileID: 6337886072106303741, guid: d6939219b7297c04cb1f617d74e6aa81, type: 3}
+  availableFemaleAvatars:
+  - {fileID: 8994187713292445827, guid: 265fcc33a2a039a41b6d839b893f4349, type: 3}
+  - {fileID: 3514324818051318611, guid: 807850e9e643dbb49a315ea7092eaa0c, type: 3}
+  - {fileID: 5513252016033236700, guid: e396d400251b2da4ebe63ef663e55ac7, type: 3}
+  - {fileID: 7717162804754211044, guid: 432733f338c8a224d9ffd990cca3d59d, type: 3}
+  - {fileID: 5231846121365986904, guid: d87219ad93b8ba544a1553c34c282e2e, type: 3}
+  - {fileID: 3574269760690264521, guid: bd61a206d18e57b44b50adf6e2617840, type: 3}
+  - {fileID: 2169426744861168237, guid: 29071b6251e6b914cb4bdd8a05dcbbc9, type: 3}
+  - {fileID: 7724719656278013776, guid: 6d6ac085e8f99724f81523055a1138e3, type: 3}
   gridGenerator: {fileID: 574984150}
   manager: {fileID: 574984149}
-  agentGenerator: {fileID: 574984148}
-  headerBackground: {fileID: 0}
-  headerTextTMP: {fileID: 88480908}
+  wallQuestionText: {fileID: 88480908}
+  moveDuration: 2
+  lineUpSpacing: 1.2
 --- !u!224 &574984152
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4722,10 +4744,8 @@ MonoBehaviour:
     be used for the first assignment
   - Once we get the hang of picking the right data structures, the assignments should
     feel way less painful.
-  speakingRenderer: {fileID: 719974249}
-  materialIndex: 0
-  colorProperty: _Color
-  speakingColor: {r: 0.108756185, g: 1, b: 0, a: 1}
+  animator: {fileID: 0}
+  isTalkingParameter: isTalking
 --- !u!114 &719974246
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5314,10 +5334,8 @@ MonoBehaviour:
   - I think it is alright in general but some of the homeworking is giving me a headache
   - "Totally\u2014maybe we set up a study session and hit office hours to clear up
     the tricky parts."
-  speakingRenderer: {fileID: 763233037}
-  materialIndex: 0
-  colorProperty: _Color
-  speakingColor: {r: 1, g: 0.08445301, b: 0, a: 1}
+  animator: {fileID: 0}
+  isTalkingParameter: isTalking
 --- !u!114 &763233041
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11268,10 +11286,8 @@ MonoBehaviour:
   sentences:
   - What do you think about the data structure and algorithm class for this semester?
   - I hope the next few courses would give us a break.
-  speakingRenderer: {fileID: 1735614580}
-  materialIndex: 0
-  colorProperty: _Color
-  speakingColor: {r: 1, g: 0.85, b: 0.2, a: 1}
+  animator: {fileID: 0}
+  isTalkingParameter: isTalking
 --- !u!1 &1746046903
 GameObject:
   m_ObjectHideFlags: 0

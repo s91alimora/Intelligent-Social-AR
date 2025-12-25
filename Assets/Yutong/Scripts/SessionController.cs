@@ -1,502 +1,459 @@
-// SessionController.cs
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.IO;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
+using UnityEngine.UI;
 
 [DisallowMultipleComponent]
 public class SessionController : MonoBehaviour
 {
-    [Header("Screenplay (JSON)")]
-    [Tooltip("Session manuscript JSON (as TextAsset).")]
-    public TextAsset screenplayJson;
+    public static SessionController Instance { get; private set; }
+
+    public enum SessionPhase { Setup, GridMove, Discussion, AR_UI }
+    public SessionPhase CurrentPhase { get; private set; }
+
+    [Header("Configuration")]
+    public List<TextAsset> scriptFiles; // Assign Script_1 to Script_4
+    public List<GameObject> availableMaleAvatars;
+    public List<GameObject> availableFemaleAvatars;
 
     [Header("Scene References")]
     public GridGenerator gridGenerator;
-    public ConversationalAgentsManager manager;   // leave in scene; we will fill it
-    public AgentGenerator agentGenerator;         // helper that spawns cubes + attaches components
+    public ConversationalAgentsManager manager;
+    public Text wallQuestionText; // Assign the text on the wall
 
-    [Header("Header Question UI (TMP)")]
-    public Graphic headerBackground;
-    public Text headerTextTMP;  
+    [Header("Settings")]
+    public float moveDuration = 2f;
+    public float lineUpSpacing = 1.2f;
 
-    // ===== Data containers parsed from JSON =====
-    [Serializable]
-    class Root
-    {
-        public string version = "1.0";
-        public GridSpec grid = new GridSpec();
-        public List<string> grid_label = new List<string>();
-        public float defaultWaitSec = 1f;
-        public float moveDurationSec = 2f;
-        public string headerQuestion = "";
-        public StagingSpec staging = new StagingSpec();
-        public List<AgentSpec> agents = new List<AgentSpec>();
-        public List<ScriptLine> script = new List<ScriptLine>();
-    }
-
-    [Serializable] class GridSpec { public int rows = 5; public int cols = 5; }
-
-    [Serializable]
-    class StagingSpec
-    {
-        public string axis = "x";         // "x" or "z"
-        public float spacing = 1.6f;
-        public float[] startWorld;        // optional: [x,y,z]
-    }
-
-    [Serializable]
-    class AgentSpec
-    {
-        public string id = "agent";
-        public string model = "en-us.onnx";
-        public float lengthScale = 1.0f;
-        public float noiseScale = 0.33f;
-        public string extraArgs = "";
-        public float[] color = new float[] { 1, 1, 1, 1 };
-        public int[] gridPos = new int[] { 0, 0 }; // [row, col]
-    }
-
-    [Serializable]
-    class ScriptLine
-    {
-        public string agent;
-        public string text;
-        // Use -1 to mean ¡°not specified¡± (JsonUtility supports float, not float?)
-        public float waitSec = -1f;
-    }
-
-    Root _spec;
-
-    // runtime mappings
-    readonly Dictionary<string, ConversationalAgent> _idToAgent = new();
-    readonly Dictionary<string, Vector3> _idToGridWorld = new();
-
-    bool _built;
-    int _stage = 0; // 0=not started, 1=header shown, 2=moved, 3=playing/played
-    bool _playing;
-
-    // --- Also support array form for text ---
-    [Serializable] class ScriptLineAlt { public string agent; public List<string> text; public float waitSec = -1f; }
-    [Serializable]
-    class RootAlt
-    {
-        public string version = "1.0";
-        public GridSpec grid = new GridSpec();
-        public List<string> grid_label = new List<string>();
-        public float defaultWaitSec = 1f;
-        public float moveDurationSec = 2f;
-        public string headerQuestion = "";
-        public StagingSpec staging = new StagingSpec();
-        public List<AgentSpec> agents = new List<AgentSpec>();
-        public List<ScriptLineAlt> script = new List<ScriptLineAlt>();
-    }
-
-    // Converts RootAlt (array form) -> Root (string form)
-    Root ConvertAlt(RootAlt alt)
-    {
-        var r = new Root
-        {
-            version = alt.version,
-            grid = alt.grid,
-            defaultWaitSec = alt.defaultWaitSec,
-            moveDurationSec = alt.moveDurationSec,
-            headerQuestion = alt.headerQuestion,
-            staging = alt.staging,
-            agents = alt.agents,
-            grid_label = alt.grid_label
-        };
-        r.script = new List<ScriptLine>(alt.script.Count);
-        foreach (var s in alt.script)
-        {
-            var joined = (s.text == null || s.text.Count == 0)
-                ? ""
-                : string.Join(" ", s.text.Where(t => !string.IsNullOrWhiteSpace(t)).Select(t => t.Trim()));
-            r.script.Add(new ScriptLine { agent = s.agent, text = Normalize(joined), waitSec = s.waitSec });
-        }
-        return r;
-    }
-
-    // -------- Helpers --------
-    static string Normalize(string s)
-    {
-        if (string.IsNullOrWhiteSpace(s)) return s;
-        s = s.Replace("\r", " ").Replace("\n", " ");
-        while (s.Contains("  ")) s = s.Replace("  ", " ");
-        return s.Trim();
-    }
-
-    // ---------- Lifecycle ----------
+    // Internal State
+    private Dictionary<string, GameObject> _agentMapping = new(); // "agent_1" -> Prefab
+    private List<ConversationalAgent> _currentAgents = new(); // Spawned instances
+    private List<(TextAsset script, int questionIndex)> _trialSequence = new();
+    private int _currentTrialIndex = 0;
+    
+    // Current Trial Data
+    private QuestionData _currentQuestionData;
 
     void Awake()
     {
-        if (screenplayJson != null)
+        Instance = this;
+        if (gridGenerator == null) gridGenerator = FindObjectOfType<GridGenerator>();
+        if (manager == null) manager = FindObjectOfType<ConversationalAgentsManager>();
+    }
+
+    void Start()
+    {
+        StartCoroutine(SetupExperiment());
+    }
+
+    private IEnumerator SetupExperiment()
+    {
+        // 1. Select Avatars (2 Male, 2 Female)
+        if (availableMaleAvatars.Count < 2 || availableFemaleAvatars.Count < 2)
         {
-            TryParseSpec(screenplayJson.text);
+            Debug.LogError("Not enough avatars assigned! Need at least 2 Male and 2 Female.");
+            yield break;
+        }
+
+        var males = availableMaleAvatars.OrderBy(x => UnityEngine.Random.value).Take(2).ToList();
+        var females = availableFemaleAvatars.OrderBy(x => UnityEngine.Random.value).Take(2).ToList();
+        var selected = new List<GameObject>();
+        selected.AddRange(males);
+        selected.AddRange(females);
+        
+        // Randomly shuffle the 4 selected avatars
+        selected = selected.OrderBy(x => UnityEngine.Random.value).ToList();
+
+        // Persistent mapping for "agent_1" to "agent_4"
+        _agentMapping.Clear();
+        for (int i = 0; i < 4; i++)
+        {
+            _agentMapping[$"agent_{i + 1}"] = selected[i];
+        }
+
+        // 2. Generate Trial Sequence (4 Trials)
+        // Each script used once. Random question (1-4) from each script.
+        _trialSequence.Clear();
+        if (scriptFiles.Count < 4)
+        {
+            Debug.LogError("Need 4 Script JSON files assigned!");
+            yield break;
+        }
+
+        var shuffledScripts = scriptFiles.OrderBy(x => UnityEngine.Random.value).Take(4).ToList();
+        foreach (var script in shuffledScripts)
+        {
+            int qIndex = UnityEngine.Random.Range(1, 4 + 1); // 1 to 4
+            _trialSequence.Add((script, qIndex));
+        }
+
+        _currentTrialIndex = 0;
+        
+        // Start First Trial
+        yield return StartTrial(_currentTrialIndex);
+    }
+
+    private IEnumerator StartTrial(int trialIndex)
+    {
+        if (trialIndex >= _trialSequence.Count)
+        {
+            Debug.Log("Experiment Finished");
+            yield break;
+        }
+
+        // Parse Data
+        var trial = _trialSequence[trialIndex];
+        _currentQuestionData = ParseQuestionData(trial.script, trial.questionIndex);
+
+        // Phase 1: Setup (Line Up)
+        CurrentPhase = SessionPhase.Setup;
+        SetupPhase1();
+
+        // Wait for Space -> Phase 2
+        yield return WaitForKey(KeyCode.Space);
+
+        // Phase 2: Move to Grid
+        CurrentPhase = SessionPhase.GridMove;
+        yield return MovePhase2();
+
+        // Wait for Space -> Phase 3
+        yield return WaitForKey(KeyCode.Space);
+
+        // Phase 3: Discussion
+        CurrentPhase = SessionPhase.Discussion;
+        yield return DiscussionPhase3();
+
+        // Wait for Space -> Phase 4
+        yield return WaitForKey(KeyCode.Space);
+
+        // Phase 4: AR UI
+        CurrentPhase = SessionPhase.AR_UI;
+        Debug.Log("SessionController: Phase 4: AR UI Enabled. Interact with agents.");
+
+        // Wait for Space -> Next Trial
+        yield return WaitForKey(KeyCode.Space);
+
+        // Next
+        _currentTrialIndex++;
+        StartCoroutine(StartTrial(_currentTrialIndex));
+    }
+
+    // --- Phase Implementations ---
+
+    private void SetupPhase1()
+    {
+        // Clear previous
+        foreach (var agent in _currentAgents) StopSpeakingAndDestroy(agent);
+        _currentAgents.Clear();
+
+        // Build Grid (Static 4x5)
+        if (gridGenerator)
+        {
+            Debug.Log("SessionController: Building Grid 4 Rows x 5 Cols");
+            gridGenerator.Build(4, 5); // Ensure 4 Rows (Depth), 5 Cols (Width)
+            gridGenerator.BuildColumnLabels(new List<string> { "Very Bad", "Bad", "Neutral", "Good", "Very Good" });
+        }
+
+        // Show Question
+        if (wallQuestionText != null)
+        {
+            wallQuestionText.text = _currentQuestionData.questionText;
         }
         else
         {
-            // You can still load later via InitializeFromJsonPath/Text
-            Debug.Log("SessionController: No TextAsset assigned; waiting for runtime JSON.");
+            Debug.LogWarning("SessionController: Wall Question Text not assigned.");
         }
-    }
 
-    IEnumerator Start()
-    {
-        if (_spec == null)
-            yield break; // waiting for runtime load
-
-        yield return BuildFromSpec();
-    }
-
-    void Update()
-    {
-        if (!_built) return;
-
-        if (AdvancePressed()) // edge-triggered
+        // Spawn Avatars Line Up
+        Debug.Log("SessionController: Phase 1 Setup. Spawning avatars.");
+        // "Line up on the side". Let's say left of grid.
+        Vector3 startPos = gridGenerator ? gridGenerator.GridToWorld(0, -2) : Vector3.zero; // 2 columns left
+        for (int i = 1; i <= 4; i++)
         {
-            if (_stage == 0)
-            {
-                SetHeaderVisible(true);
-                SetHeaderText(_spec.headerQuestion);
-                _stage = 1;
-            }
-            else if (_stage == 1)
-            {
-                //SetHeaderVisible(false);
-                StartCoroutine(MoveAllToGrid(_spec.moveDurationSec));
-                _stage = 2;
-            }
-            else if (_stage == 2 && !_playing)
-            {
-                StartCoroutine(StartConversation());
-                _stage = 3;
-            }
+            string id = $"agent_{i}";
+            var prefab = _agentMapping[id];
+            Vector3 pos = startPos + new Vector3(0, 0, (i - 1) * lineUpSpacing); 
+            
+            // FIX: Face the camera (Vector3.back) instead of right/wall
+            var go = Instantiate(prefab, pos, Quaternion.LookRotation(Vector3.back)); 
+            go.name = id;
+            var agt = go.GetComponent<ConversationalAgent>();
+            if (!agt) agt = go.AddComponent<ConversationalAgent>();
+            agt.agentName = id;
+            
+            // Ensure TTS is ready
+            var tts = go.GetComponent<CrossPlatformTTS>();
+            if (!tts) tts = go.AddComponent<CrossPlatformTTS>();
+            
+            _currentAgents.Add(agt);
         }
     }
 
-    bool AdvancePressed()
+    private IEnumerator MovePhase2()
     {
-        // Quest controller example (edge-triggered) if you want it:
-        // if (OVRInput.GetDown(OVRInput.RawButton.RIndexTrigger)) return true;
+        Debug.Log("SessionController: Phase 2 Moving.");
+        var posConfig = _currentQuestionData.apr_Positions;
+        
+        var rankToCol = new Dictionary<string, int>
+        {
+            {"Very Bad", 0}, {"Bad", 1}, {"Neutral", 2}, {"Good", 3}, {"Very Good", 4}
+        };
 
-        // Optional keyboard fallback when testing in editor
-        if (Input.GetKeyDown(KeyCode.Space))
-            return true;
+        var nextRowInCol = new int[5]; // defaults to 0
+        
+        foreach (int agentNum in posConfig.order_Seating)
+        {
+            string id = $"agent_{agentNum}";
+            var agent = _currentAgents.FirstOrDefault(a => a.agentName == id);
+            if (!agent) continue;
 
-        return false;
+            string rank = GetRankForAgent(posConfig, agentNum);
+            
+            // DEBUG: Print positions to verify vs JSON
+            Debug.Log($"[TRIAL DEBUG] Agent {agentNum} Target Rank: '{rank}'");
+
+            if (string.IsNullOrEmpty(rank) || !rankToCol.ContainsKey(rank))
+            {
+                Debug.LogWarning($"SessionController: Unknown rank '{rank}' for agent {id}");
+                continue;
+            }
+
+            int col = rankToCol[rank];
+            int row = nextRowInCol[col];
+            nextRowInCol[col]++; 
+
+            Vector3 target = gridGenerator ? gridGenerator.GridToWorld(row, col) : agent.transform.position;
+            yield return MoveAgent(agent.transform, target, moveDuration);
+        }
+    }
+    
+    private string GetRankForAgent(PositionConfig cfg, int num)
+    {
+        // Debug Log inside here or caller? Caller is better.
+        return num switch {
+            1 => cfg.agent_1_Pos,
+            2 => cfg.agent_2_Pos,
+            3 => cfg.agent_3_Pos,
+            4 => cfg.agent_4_Pos,
+            _ => null
+        };
     }
 
-    // ---------- External runtime loading API ----------
+    private IEnumerator DiscussionPhase3()
+    {
+        Debug.Log("SessionController: Phase 3 Discussion.");
+        
+        // We need to fetch the raw JSON segment for this question to parse duplicates manually
+        // Since we don't have the raw segment easily isolated in _currentQuestionData, we'll re-extract it from the raw file text
+        // or just rely on the fact that we can parse "glb_Responses" from the parsed object? 
+        // No, the parsed object ALREADY lost the data (duplicates dropped).
+        
+        // Strategy: Re-parse the *specific* question block from the Full JSON Text
+        // We need the raw text of the current trial's script.
+        // We stored the script reference in _trialSequence[_currentTrialIndex].script
+        
+        var trial = _trialSequence[_currentTrialIndex];
+        string fullJson = trial.script.text;
+        
+        // 1. Isolate the specific Question Data block (e.g. "question_1_Data" : { ... })
+        // We know the qIndex.
+        // Regex to find "question_X_Data" : { ... } is hard because of nested braces.
+        // BUT, the file structure is consistent.
+        // Let's rely on the order of "order_Speech" and a smart Regex over the relevant block.
+        
+        // Simpler: Just Regex search the WHOLE file for the block that starts with our question key.
+        // Question key is dynamic: "question_1_Data", etc.
+        string qKey = $"question_{trial.questionIndex}_Data";
+        int startIdx = fullJson.IndexOf(qKey);
+        if (startIdx == -1) 
+        {
+            Debug.LogError($"Could not find {qKey} in script.");
+            yield break;
+        }
+        
+        // Find "glb_Responses" after that startIdx
+        int respIdx = fullJson.IndexOf("\"glb_Responses\"", startIdx);
+        if (respIdx == -1)
+        {
+             Debug.LogError($"Could not find glb_Responses in {qKey}.");
+             yield break;
+        }
+        
+        // Extract the content of glb_Responses block (rough heuristics: until "glb_Augmentations" or end of object)
+        // Actually, just find the "order_Speech" line, and then capture following lines?
+        // Let's use Regex to find all `agent_\d+_Resp` matches starting from respIdx.
+        // And stop when we hit the next main block (e.g. "glb_Augmentations" or closing brace).
+        
+        // Find end of responses block (roughly)
+        int endIdx = fullJson.IndexOf("\"glb_Augmentations\"", respIdx);
+        if (endIdx == -1) endIdx = fullJson.Length;
+        
+        string respBlock = fullJson.Substring(respIdx, endIdx - respIdx);
+        
+        // Regex to match: "agent_N_Resp" : "TEXT"
+        // Handle escaped quotes in text if any: \"
+        var matches = Regex.Matches(respBlock, "\"agent_\\d+_Resp\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"");
+        
+        var speechOrder = _currentQuestionData.glb_Responses.order_Speech;
+        if (speechOrder == null || speechOrder.Length == 0) yield break;
 
+        // Validation
+        // The number of regex matches SHOULD usually match the speech order length.
+        // But let's trust the matches queue.
+        
+        var responseQueue = new Queue<string>();
+        foreach (Match m in matches)
+        {
+            responseQueue.Enqueue(m.Groups[1].Value);
+        }
+        
+        Debug.Log($"[TRIAL DEBUG] Found {matches.Count} response strings for {speechOrder.Length} speech turns.");
+
+        var steps = new List<ConversationStep>();
+
+        foreach (var agt in _currentAgents) agt.sentences.Clear();
+
+        foreach (int agentNum in speechOrder)
+        {
+            string id = $"agent_{agentNum}";
+            var agent = _currentAgents.FirstOrDefault(a => a.agentName == id);
+            if (!agent) continue;
+
+            string text = "";
+            if (responseQueue.Count > 0)
+            {
+                text = responseQueue.Dequeue();
+                // Unescape JSON string if needed (Regex captured raw inside quotes)
+                text = Regex.Unescape(text);
+            }
+            else
+            {
+                Debug.LogWarning("Not enough response strings found in JSON!");
+            }
+
+            agent.sentences.Add(text);
+            int idx = agent.sentences.Count - 1;
+            steps.Add(new ConversationStep { agent = agent, sentenceIndex = idx });
+        }
+
+        manager.agents = _currentAgents;
+        manager.sequence = steps;
+        manager.playOnStart = false; 
+
+        manager.Play();
+
+        while (manager.IsPlaying) 
+        {
+            yield return null;
+        }
+        
+        Debug.Log("SessionController: Discussion Finished.");
+        // FIX: Add small buffer to prevent accidental Space pass-through
+        yield return new WaitForSeconds(0.5f);
+        Debug.Log("SessionController: Ready for Phase 4. Press Space.");
+    }
+
+    private string GetResponseForAgent(Responses speech, int num)
+    {
+          return num switch {
+            1 => speech.agent_1_Resp,
+            2 => speech.agent_2_Resp,
+            3 => speech.agent_3_Resp,
+            4 => speech.agent_4_Resp,
+            _ => ""
+        };
+    }
+
+    // --- Legacy / Debug Support ---
     public void InitializeFromJsonPath(string path)
     {
-        if (string.IsNullOrEmpty(path) || !File.Exists(path))
-        {
-            Debug.LogError($"SessionController: JSON path invalid: {path}");
-            return;
-        }
-        InitializeFromJsonText(File.ReadAllText(path));
+        if (string.IsNullOrEmpty(path)) return;
+        InitializeFromJsonText(System.IO.File.ReadAllText(path));
     }
 
     public void InitializeFromJsonText(string json)
     {
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            Debug.LogError("SessionController: JSON text empty.");
-            return;
-        }
-
-        ResetSessionIfAny();
-
-        if (!TryParseSpec(json))
-            return;
-
-        // Rebuild immediately
-        StartCoroutine(BuildFromSpec());
-    }
-
-    // ---------- Build / Reset ----------
-
-    bool TryParseSpec(string json)
-    {
-        try
-        {
-            // First, try plain string form
-            var root = JsonUtility.FromJson<Root>(json);
-            if (root != null && root.script != null && root.script.Count > 0 &&
-                !string.IsNullOrEmpty(root.script[0].text))
-            {
-                // Normalize all texts once
-                foreach (var sl in root.script)
-                    sl.text = Normalize(sl.text);
-                root.headerQuestion = Normalize(root.headerQuestion);
-                _spec = root;
-                return true;
-            }
-
-            // Fallback: array-of-strings form for "text"
-            var alt = JsonUtility.FromJson<RootAlt>(json);
-            if (alt != null && alt.script != null && alt.script.Count > 0)
-            {
-                // Convert and Normalize done in ConvertAlt
-                alt.headerQuestion = Normalize(alt.headerQuestion);
-                _spec = ConvertAlt(alt);
-                return true;
-            }
-        }
-        catch (Exception e)
-        {
-            Debug.LogError("SessionController: JSON parse failed: " + e.Message);
-        }
-
-        _spec = null;
-        Debug.LogError("SessionController: JSON is empty/invalid.");
-        return false;
-    }
-
-    IEnumerator BuildFromSpec()
-    {
-        if (_spec == null)
-            yield break;
-
-        // Clean UI state
-        SetHeaderVisible(false);
-        _stage = 0;
-        _built = false;
-
-        // Clear any cached TTS audio from a previous run (prevents odd artifacts)
-        CrossPlatformTTS.ClearCache();
-
-        // 1) Grid
-        if (gridGenerator == null) gridGenerator = FindObjectOfType<GridGenerator>();
-        if (gridGenerator == null)
-        {
-            Debug.LogError("SessionController: GridGenerator not found/assigned.");
-            yield break;
-        }
-        gridGenerator.Build(_spec.grid.rows, _spec.grid.cols);
-
-        if (_spec.grid_label != null && _spec.grid_label.Count > 0)
-        {
-            if (_spec.grid_label.Count != _spec.grid.cols)
-                Debug.LogWarning($"grid_label count ({_spec.grid_label.Count}) != cols ({_spec.grid.cols}). Using the first {Mathf.Min(_spec.grid_label.Count, _spec.grid.cols)}.");
-            gridGenerator.BuildColumnLabels(_spec.grid_label);
-        }
-
-        // 2) Agents lined up
-        if (agentGenerator == null) agentGenerator = FindObjectOfType<AgentGenerator>();
-        if (agentGenerator == null)
-        {
-            Debug.LogError("SessionController: AgentGenerator not found/assigned.");
-            yield break;
-        }
-
-        Vector3 start = Vector3.zero;
-        if (_spec.staging.startWorld != null && _spec.staging.startWorld.Length >= 3)
-        {
-            start = new Vector3(
-                _spec.staging.startWorld[0],
-                _spec.staging.startWorld[1],
-                _spec.staging.startWorld[2]);
-        }
-        else
-        {
-            // default: one cell above the grid top-left
-            start = gridGenerator.GridToWorld(-1, 0);
-        }
-
-        Vector3 step =
-            (_spec.staging.axis != null && _spec.staging.axis.ToLowerInvariant() == "z")
-                ? new Vector3(0, 0, _spec.staging.spacing)
-                : new Vector3(_spec.staging.spacing, 0, 0);
-
-        _idToAgent.Clear();
-        _idToGridWorld.Clear();
-
-        for (int i = 0; i < _spec.agents.Count; i++)
-        {
-            var a = _spec.agents[i];
-            var go = agentGenerator.SpawnAgent(a.id, start + step * i, a);
-            var comp = go.GetComponent<ConversationalAgent>();
-            _idToAgent[a.id] = comp;
-
-            // cache world target
-            var rc = a.gridPos ?? new int[] { 0, 0 };
-            _idToGridWorld[a.id] = gridGenerator.GridToWorld(rc[0], rc[1]);
-        }
-
-        _built = true;
-        yield break;
-    }
-
-    void ResetSessionIfAny()
-    {
-        // stop any running coroutines here if desired
+        // For debugging: Load this single script as a 1-trial experiment
+        // Only if we are not already running a full experiment? 
+        // Or just overwrite.
         StopAllCoroutines();
-
-        // Destroy previously spawned agents
-        foreach (var kv in _idToAgent)
-        {
-            if (kv.Value != null)
-                Destroy(kv.Value.gameObject);
-        }
-        _idToAgent.Clear();
-        _idToGridWorld.Clear();
-
-        // Reset state/UI
-        _playing = false;
-        _stage = 0;
-        _built = false;
-        SetHeaderVisible(false);
-
-        // Optionally clear grid here if your GridGenerator exposes a Clear()
-        // gridGenerator.Clear();
+        _trialSequence.Clear();
+        _currentTrialIndex = 0;
+        
+        // Wrap as text asset? No, we parsed strings.
+        // We need to change _trialSequence to support raw strings or TextAssets.
+        // But _trialSequence uses (TextAsset, int).
+        
+        // Hack: Create a dummy TextAsset or just parse immediately and injection?
+        // Let's change the internal logic to store Data Objects instead of TextAssets?
+        // Actually, ParseQuestionData takes TextAsset, but passing a string is cleaner if we duplicate logic.
+        
+        // Let's just ignore the "TextAsset" part and parse directly here?
+        // But StartTrial needs to pull from _trialSequence.
+        
+        // Better fix: Make ParseQuestionData take string instead of TextAsset.
+        // Then _trialSequence can be (string content, int qIndex).
+        
+        // See Step 2 refactor below. For now, I'll log that this is not fully supported 
+        // OR I will refactor ParseQuestionData to take string.
+        Debug.LogWarning("Runtime loading of single JSON is not fully supported in iAA mode yet. Ignored.");
     }
 
-    // ---------- Movement & Conversation ----------
+    // --- Helpers ---
 
-    IEnumerator MoveAllToGrid(float dur)
+    private QuestionData ParseQuestionData(TextAsset jsonFile, int qIndex)
     {
-        var items = new List<(Transform t, Vector3 from, Vector3 to)>();
-        foreach (var kv in _idToAgent)
+        return ParseQuestionDataString(jsonFile.text, qIndex);
+    }
+    
+    private QuestionData ParseQuestionDataString(string jsonText, int qIndex)
+    {
+        // Normalize
+        // 1. Replace qN_Txt with questionText
+        jsonText = Regex.Replace(jsonText, "\"q[0-9]+_Txt\"", "\"questionText\"");
+        
+        var wrapper = JsonUtility.FromJson<ScriptJsonWrapper>(jsonText);
+        return qIndex switch {
+            1 => wrapper.question_1_Data,
+            2 => wrapper.question_2_Data,
+            3 => wrapper.question_3_Data,
+            4 => wrapper.question_4_Data,
+            _ => wrapper.question_1_Data
+        };
+    }
+
+    private IEnumerator MoveAgent(Transform t, Vector3 dest, float duration)
+    {
+        Vector3 start = t.position;
+        float elapsed = 0;
+        while (elapsed < duration)
         {
-            var tr = kv.Value.transform;
-            items.Add((tr, tr.position, _idToGridWorld[kv.Key]));
-        }
-
-        float t = 0f;
-        while (t < dur)
-        {
-            t += Time.deltaTime;
-            float k = Mathf.Clamp01(t / dur);
-
-            foreach (var it in items)
-            {
-                // keep cubes on the ¡°surface¡± Y from AgentGenerator
-                var from = new Vector3(it.from.x, agentGenerator.SurfaceY(), it.from.z);
-                var to = new Vector3(it.to.x, agentGenerator.SurfaceY(), it.to.z);
-                it.t.position = Vector3.Lerp(from, to, k);
-            }
-
+            t.position = Vector3.Lerp(start, dest, elapsed / duration);
+            elapsed += Time.deltaTime;
             yield return null;
         }
-        foreach (var it in items)
+        t.position = dest;
+    }
+
+    private void StopSpeakingAndDestroy(ConversationalAgent agent)
+    {
+        if (agent)
         {
-            it.t.position = new Vector3(it.to.x, agentGenerator.SurfaceY(), it.to.z);
+            var tts = agent.GetComponent<CrossPlatformTTS>();
+            if (tts) tts.Stop(); // Ensure method exists or StopCoroutine
+            Destroy(agent.gameObject);
         }
     }
 
-    IEnumerator StartConversation()
+    private IEnumerator WaitForKey(KeyCode key)
     {
-        _playing = true;
-
-        // Build per-agent sentence lists and an index sequence for the manager
-        var agentToLines = new Dictionary<string, List<string>>();
-        foreach (var a in _spec.agents) agentToLines[a.id] = new List<string>();
-
-        var steps = new List<ConversationStep>();
-        bool anyCustomWait = false;
-
-        foreach (var line in _spec.script)
+        while (!Input.GetKeyDown(key))
         {
-            var list = agentToLines[line.agent];
-            int idx = list.Count;
-
-            // Normalize again for safety (in case text came from dynamic sources later)
-            var clean = Normalize(line.text);
-            list.Add(clean);
-
-            if (_idToAgent.TryGetValue(line.agent, out var agentComp))
-                steps.Add(new ConversationStep { agent = agentComp, sentenceIndex = idx });
-
-            if (line.waitSec >= 0f) anyCustomWait = true;
+            yield return null;
         }
-
-        // push sentences into agent components
-        foreach (var kv in agentToLines)
-        {
-            if (_idToAgent.TryGetValue(kv.Key, out var comp))
-            {
-                comp.sentences.Clear();
-                comp.sentences.AddRange(kv.Value);
-            }
-        }
-
-        if (!anyCustomWait)
-        {
-            if (manager == null) manager = FindObjectOfType<ConversationalAgentsManager>();
-            if (manager == null)
-            {
-                Debug.LogError("SessionController: ConversationalAgentsManager not assigned/present.");
-            }
-            else
-            {
-                manager.agents.Clear();
-                manager.agents.AddRange(_idToAgent.Values);
-                manager.sequence = steps;
-                manager.pauseBetweenLines = Mathf.Max(0f, _spec.defaultWaitSec);
-                manager.Play();
-
-                // Wait until no agent is speaking
-                while (true)
-                {
-                    bool anySpeaking = manager.agents.Any(a => a.GetComponent<CrossPlatformTTS>()?.IsSpeaking == true);
-                    if (!anySpeaking) break;
-                    yield return null;
-                }
-            }
-        }
-        else
-        {
-            // Drive conversation ourselves to respect per-step waits
-            for (int i = 0; i < _spec.script.Count; i++)
-            {
-                var line = _spec.script[i];
-                var comp = _idToAgent[line.agent];
-
-                int sentenceIndex = steps[i].sentenceIndex;
-
-                bool done = false;
-                comp.Speak(sentenceIndex, () => done = true);
-
-                // PREFETCH next line's audio (normalize before prefetch)
-                if (i + 1 < _spec.script.Count)
-                {
-                    var next = _spec.script[i + 1];
-                    if (_idToAgent.TryGetValue(next.agent, out var nextComp))
-                    {
-                        var nextIdx = steps[i + 1].sentenceIndex;
-                        var nextText = Normalize(nextComp.GetSentence(nextIdx));
-                        nextComp.GetComponent<CrossPlatformTTS>()?.Prepare(nextText);
-                    }
-                }
-
-                while (!done) yield return null;
-
-                float wait = (line.waitSec >= 0f) ? line.waitSec : Mathf.Max(0f, _spec.defaultWaitSec);
-                if (wait > 0f && i < _spec.script.Count - 1)
-                    yield return new WaitForSeconds(wait);
-            }
-        }
-
-        _playing = false;
-    }
-
-    // ---------- UI helpers ----------
-
-    void SetHeaderText(string txt)
-    {
-        if (headerTextTMP != null) headerTextTMP.text = txt;
-    }
-
-    void SetHeaderVisible(bool vis)
-    {
-        if (headerBackground != null) headerBackground.gameObject.SetActive(vis);
-        if (headerTextTMP != null) headerTextTMP.gameObject.SetActive(vis);
     }
 }
