@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
@@ -29,6 +30,13 @@ public class SessionController : MonoBehaviour
     [Header("Settings")]
     public float moveDuration = 2f;
     public float lineUpSpacing = 1.2f;
+
+    [Header("Augmentation UI")]
+    public GameObject augmentationPanel;
+    public TextMeshProUGUI suggestionsText;
+    public TextMeshProUGUI themesText;
+    public Image speakingSumImage;
+    public Image grpMoveImage;
 
     // Internal State
     private Dictionary<string, GameObject> _agentMapping = new(); // "agent_1" -> Prefab
@@ -134,6 +142,10 @@ public class SessionController : MonoBehaviour
         // Phase 4: AR UI
         CurrentPhase = SessionPhase.AR_UI;
         Debug.Log("SessionController: Phase 4: AR UI Enabled. Interact with agents.");
+        
+        // Show Augmentations
+        ShowGroupAugmentations();
+        
         yield return new WaitForSeconds(0.5f); // Ensure UI/Phase state is clear
 
         // Wait for Space -> Next Trial
@@ -149,6 +161,9 @@ public class SessionController : MonoBehaviour
 
     private void SetupPhase1()
     {
+        // Hide Augmentations at start of trial
+        if (augmentationPanel != null) augmentationPanel.SetActive(false);
+
         // Clear previous
         foreach (var agent in _currentAgents) StopSpeakingAndDestroy(agent);
         _currentAgents.Clear();
@@ -359,6 +374,112 @@ public class SessionController : MonoBehaviour
         // FIX: Add small buffer to prevent accidental Space pass-through
         yield return new WaitForSeconds(0.5f);
         Debug.Log("SessionController: Ready for Phase 4. Press Space.");
+    }
+
+    private void ShowGroupAugmentations()
+    {
+        if (augmentationPanel != null) augmentationPanel.SetActive(true);
+
+        var trial = _trialSequence[_currentTrialIndex];
+        string fullJson = trial.script.text;
+        string qKey = $"question_{trial.questionIndex}_Data";
+        int startIdx = fullJson.IndexOf(qKey);
+        
+        if (startIdx == -1) return;
+
+        // 1. Extract Text Augmentations (glb_Grp_Sums)
+        int grpSumsIdx = fullJson.IndexOf("\"glb_Grp_Sums\"", startIdx);
+        if (grpSumsIdx != -1)
+        {
+            // Suggestions
+            string suggestions = ExtractJsonString(fullJson, "glb_Grp_Suggestions", grpSumsIdx);
+            if (suggestionsText != null) 
+                suggestionsText.text = FormatBulletinPoints(suggestions);
+
+            // Themes
+            string themes = ExtractJsonString(fullJson, "glb_Emg_Themes", grpSumsIdx);
+            if (themesText != null) 
+                themesText.text = FormatBulletinPoints(themes);
+        }
+
+        // 2. Extract Image Augmentations (apr_Grp_Sums)
+        int aprGrpSumsIdx = fullJson.IndexOf("\"apr_Grp_Sums\"", startIdx);
+        if (aprGrpSumsIdx != -1)
+        {
+            string speakingPath = ExtractJsonString(fullJson, "speaking_Sum", aprGrpSumsIdx);
+            string movePath = ExtractJsonString(fullJson, "grp_Move", aprGrpSumsIdx);
+
+            if (speakingSumImage != null) LoadImageToUI(speakingPath, speakingSumImage);
+            if (grpMoveImage != null) LoadImageToUI(movePath, grpMoveImage);
+        }
+    }
+
+    private string ExtractJsonString(string json, string key, int searchStart)
+    {
+        // Matches "key" : "value"
+        var match = Regex.Match(json.Substring(searchStart), $"\"{key}\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"");
+        if (match.Success)
+        {
+            return Regex.Unescape(match.Groups[1].Value);
+        }
+        return "";
+    }
+
+    private string FormatBulletinPoints(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return "";
+        
+        // Ensure that each ■ starts on a new line if it doesn't already
+        // First, replace any existing \n ■ with just ■ to normalize, then replace all ■ with \n■
+        // Then trim the leading newline if added.
+        
+        // User wants: "I want you to use reg exp to read how many bulletin points there are and each bulletin points use a line"
+        // And "preserve the ■ in the text, put it in the beginning"
+        
+        // Simple strategy: Split by ■, then join with \n ■
+        string[] parts = text.Split(new char[] { '■' }, StringSplitOptions.RemoveEmptyEntries);
+        string formatted = "";
+        for (int i = 0; i < parts.Length; i++)
+        {
+            formatted += "■ " + parts[i].Trim() + (i < parts.Length - 1 ? "\n" : "");
+        }
+        return formatted;
+    }
+
+    private void LoadImageToUI(string relativePath, Image uiImage)
+    {
+        if (string.IsNullOrEmpty(relativePath)) return;
+
+        // Convert relative path (Assets/...) to absolute path
+        // Application.dataPath is C:/.../Assets
+        // JSON sequence: Assets/Augmentation Images/...
+        // So we need to handle the "Assets/" prefix carefully.
+        
+        string fullPath = "";
+        if (relativePath.StartsWith("Assets/"))
+        {
+            fullPath = Path.Combine(Application.dataPath, relativePath.Substring(7));
+        }
+        else
+        {
+            fullPath = Path.Combine(Application.dataPath, relativePath);
+        }
+
+        if (File.Exists(fullPath))
+        {
+            byte[] fileData = File.ReadAllBytes(fullPath);
+            Texture2D tex = new Texture2D(2, 2);
+            if (tex.LoadImage(fileData))
+            {
+                // Create sprite
+                Sprite sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+                uiImage.sprite = sprite;
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"SessionController: Image file not found at {fullPath}");
+        }
     }
 
     private string GetResponseForAgent(Responses speech, int num)

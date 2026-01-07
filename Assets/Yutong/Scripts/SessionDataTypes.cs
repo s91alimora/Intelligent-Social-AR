@@ -17,7 +17,35 @@ public class QuestionData
     public string questionText; // Replaces q1_Txt, etc.
     public PositionConfig apr_Positions;
     public Responses glb_Responses;
-    // We ignore augmentations for now as per instructions
+    public GroupAugmentations glb_Augmentations;
+    public AppraisalAugmentations apr_Augmentations;
+}
+
+[Serializable]
+public class GroupAugmentations
+{
+    public Dictionary<string, string> glb_ind_Sums; // Note: JsonUtility doesn't support Dictionary, but we can keep it for structure or skip.
+    public GroupSummaries glb_Grp_Sums;
+}
+
+[Serializable]
+public class GroupSummaries
+{
+    public string glb_Grp_Suggestions;
+    public string glb_Emg_Themes;
+}
+
+[Serializable]
+public class AppraisalAugmentations
+{
+    public GroupAppraisalSummaries apr_Grp_Sums;
+}
+
+[Serializable]
+public class GroupAppraisalSummaries
+{
+    public string speaking_Sum;
+    public string grp_Move;
 }
 
 [Serializable]
