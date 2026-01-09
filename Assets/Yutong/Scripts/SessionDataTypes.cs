@@ -46,6 +46,7 @@ public class GroupAppraisalSummaries
 {
     public string speaking_Sum;
     public string grp_Move;
+    public string grp_Sim_Mat;
 }
 
 [Serializable]

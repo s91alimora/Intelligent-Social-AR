@@ -3910,6 +3910,7 @@ GameObject:
   - component: {fileID: 574984148}
   - component: {fileID: 574984154}
   - component: {fileID: 574984153}
+  - component: {fileID: 574984155}
   m_Layer: 0
   m_Name: Session Controller
   m_TagString: Untagged
@@ -4018,6 +4019,8 @@ MonoBehaviour:
   themesText: {fileID: 1020282006}
   speakingSumImage: {fileID: 2080814148}
   grpMoveImage: {fileID: 1109781844}
+  grpSimMatImage: {fileID: 1974441673}
+  interacter: {fileID: 574984155}
 --- !u!224 &574984152
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4134,6 +4137,26 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 574984147}
   m_CullTransparentMesh: 1
+--- !u!114 &574984155
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 574984147}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 928db537aab9b4c45bcbf9d1644bb00e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mainCamera: {fileID: 913560726}
+  raySource: {fileID: 913560725}
+  maxDistance: 10
+  layerMask:
+    serializedVersion: 2
+    m_Bits: 64
+  saccadeThreshold: 0.3
+  jitterBuffer: 0.25
 --- !u!1 &577587232
 GameObject:
   m_ObjectHideFlags: 0

@@ -37,6 +37,8 @@ public class SessionController : MonoBehaviour
     public TextMeshProUGUI themesText;
     public Image speakingSumImage;
     public Image grpMoveImage;
+    public Image grpSimMatImage;
+    public AgentAugmentationInteracter interacter;
 
     // Internal State
     private Dictionary<string, GameObject> _agentMapping = new(); // "agent_1" -> Prefab
@@ -146,6 +148,14 @@ public class SessionController : MonoBehaviour
         // Show Augmentations
         ShowGroupAugmentations();
         
+        // Phase 4: Enable Individual Augmentation Interacter
+        if (interacter != null) 
+        {
+            interacter.PopulateAll(_currentAgents, trial.script.text, trial.questionIndex);
+            interacter.PreSetupCanvases(_currentAgents);
+            interacter.SetActive(true);
+        }
+        
         yield return new WaitForSeconds(0.5f); // Ensure UI/Phase state is clear
 
         // Wait for Space -> Next Trial
@@ -153,6 +163,7 @@ public class SessionController : MonoBehaviour
         yield return WaitForKey(KeyCode.Space);
 
         // Next
+        if (interacter != null) interacter.SetActive(false);
         _currentTrialIndex++;
         StartCoroutine(StartTrial(_currentTrialIndex));
     }
@@ -163,6 +174,7 @@ public class SessionController : MonoBehaviour
     {
         // Hide Augmentations at start of trial
         if (augmentationPanel != null) augmentationPanel.SetActive(false);
+        if (interacter != null) interacter.SetActive(false);
 
         // Clear previous
         foreach (var agent in _currentAgents) StopSpeakingAndDestroy(agent);
@@ -209,6 +221,10 @@ public class SessionController : MonoBehaviour
             if (!tts) tts = go.AddComponent<CrossPlatformTTS>();
             
             _currentAgents.Add(agt);
+
+            // Hide individual augmentation canvas initially
+            var canvas = go.GetComponentInChildren<Canvas>(true);
+            if (canvas != null) canvas.gameObject.SetActive(false);
         }
     }
 
@@ -408,9 +424,11 @@ public class SessionController : MonoBehaviour
         {
             string speakingPath = ExtractJsonString(fullJson, "speaking_Sum", aprGrpSumsIdx);
             string movePath = ExtractJsonString(fullJson, "grp_Move", aprGrpSumsIdx);
+            string simMatPath = ExtractJsonString(fullJson, "grp_Sim_Mat", aprGrpSumsIdx);
 
             if (speakingSumImage != null) LoadImageToUI(speakingPath, speakingSumImage);
             if (grpMoveImage != null) LoadImageToUI(movePath, grpMoveImage);
+            if (grpSimMatImage != null) LoadImageToUI(simMatPath, grpSimMatImage);
         }
     }
 
