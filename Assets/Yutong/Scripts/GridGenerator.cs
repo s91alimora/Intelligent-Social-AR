@@ -7,7 +7,8 @@ using UnityEngine;
 public class GridGenerator : MonoBehaviour
 {
     [Header("Layout")]
-    public float cellSize = 1.2f;
+    public float cellWidth = 1.2f;
+    public float cellDepth = 1.2f;
     public Vector3 origin = Vector3.zero;  // world position of cell (0,0) center
 
     [Header("Rendering")]
@@ -44,15 +45,15 @@ public class GridGenerator : MonoBehaviour
         // Draw verticals (cols+1)
         for (int c = 0; c <= _cols; c++)
         {
-            Vector3 a = origin + new Vector3((c - 0.5f) * cellSize, 0f, (-0.5f) * cellSize);
-            Vector3 b = origin + new Vector3((c - 0.5f) * cellSize, 0f, (_rows - 0.5f) * cellSize);
+            Vector3 a = origin + new Vector3((c - 0.5f) * cellWidth, 0f, (-0.5f) * cellDepth);
+            Vector3 b = origin + new Vector3((c - 0.5f) * cellWidth, 0f, (_rows - 0.5f) * cellDepth);
             AddLine(a, b);
         }
         // Draw horizontals (rows+1)
         for (int r = 0; r <= _rows; r++)
         {
-            Vector3 a = origin + new Vector3((-0.5f) * cellSize, 0f, (r - 0.5f) * cellSize);
-            Vector3 b = origin + new Vector3((_cols - 0.5f) * cellSize, 0f, (r - 0.5f) * cellSize);
+            Vector3 a = origin + new Vector3((-0.5f) * cellWidth, 0f, (r - 0.5f) * cellDepth);
+            Vector3 b = origin + new Vector3((_cols - 0.5f) * cellWidth, 0f, (r - 0.5f) * cellDepth);
             AddLine(a, b);
         }
     }
@@ -73,13 +74,13 @@ public class GridGenerator : MonoBehaviour
             {
                 // Align to right side (X+), iterating rows
                 if (i >= _rows) break;
-                pos = GridToWorld(i, _cols - 1) + new Vector3(cellSize * 1.0f, labelY, 0f);
+                pos = GridToWorld(i, _cols - 1) + new Vector3(cellWidth * 1.0f, labelY, 0f);
             }
             else if (labelAlignment == LabelAlignment.Left)
             {
                 // Align to left side (X-), iterating rows
                 if (i >= _rows) break;
-                pos = GridToWorld(i, 0) + new Vector3(-cellSize * 1.0f, labelY, 0f);
+                pos = GridToWorld(i, 0) + new Vector3(-cellWidth * 1.0f, labelY, 0f);
             }
             else
             {
@@ -126,7 +127,7 @@ public class GridGenerator : MonoBehaviour
         // Allow -1 row (used for staging/labels)
         float r = row + 0.0f;
         float c = col + 0.0f;
-        return origin + new Vector3(c * cellSize, 0f, r * cellSize);
+        return origin + new Vector3(c * cellWidth, 0f, r * cellDepth);
     }
 
     void AddLine(Vector3 a, Vector3 b)
