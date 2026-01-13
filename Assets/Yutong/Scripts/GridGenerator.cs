@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
-//using TMPro;
+using TMPro;
 
 
 [DisallowMultipleComponent]
@@ -25,6 +25,11 @@ public class GridGenerator : MonoBehaviour
     public int labelFontSize = 64;                     // mesh resolution
     public float labelCharacterSize = 0.12f;           // world size per glyph
     public Color labelColor = Color.black;
+    
+    [Header("Prefab Labels")]
+    public GameObject labelPrefab;
+    public Camera mainCamera;
+
 
 
     public enum LabelAlignment { Bottom, Right, Left }
@@ -32,7 +37,8 @@ public class GridGenerator : MonoBehaviour
 
     int _rows, _cols;
     readonly List<LineRenderer> _lines = new();
-    readonly List<TextMesh> _labels = new();
+    readonly List<GameObject> _labels = new();
+
 
     public void Build(int rows, int cols)
     {
@@ -63,6 +69,11 @@ public class GridGenerator : MonoBehaviour
         ClearLabels();
         if (!showColumnLabels) return;
         if (labels == null || labels.Count == 0) return;
+        if (labelPrefab == null)
+        {
+            Debug.LogWarning("GridGenerator: Label Prefab is not assigned!");
+            return;
+        }
 
         int count = labels.Count;
         for (int i = 0; i < count; i++)
@@ -72,53 +83,46 @@ public class GridGenerator : MonoBehaviour
             
             if (labelAlignment == LabelAlignment.Right)
             {
-                // Align to right side (X+), iterating rows
                 if (i >= _rows) break;
                 pos = GridToWorld(i, _cols - 1) + new Vector3(cellWidth * 1.0f, labelY, 0f);
             }
             else if (labelAlignment == LabelAlignment.Left)
             {
-                // Align to left side (X-), iterating rows
                 if (i >= _rows) break;
                 pos = GridToWorld(i, 0) + new Vector3(-cellWidth * 1.0f, labelY, 0f);
             }
             else
             {
-                // Original bottom alignment, iterating columns
                 if (i >= _cols) break;
                 pos = GridToWorld(-1, i) + new Vector3(0f, labelY, 0f); 
             }
 
-            var go = new GameObject($"grid-label-{i}");
-            go.transform.SetParent(transform, false);
-            go.transform.position = pos;
-            go.transform.rotation = Quaternion.Euler(labelRotationEuler);
+            // Instantiate from prefab
+            GameObject go = Instantiate(labelPrefab, pos, Quaternion.Euler(labelRotationEuler), transform);
+            go.name = $"grid-label-{i}";
             go.transform.localScale = Vector3.one * labelScale;
 
-            var tm = go.AddComponent<TextMesh>();  // Legacy TextMesh
-            tm.text = txt;
-            tm.anchor = TextAnchor.MiddleCenter;
-            tm.alignment = TextAlignment.Center;
-
-            if (labelFontLegacy != null)
+            // Setup Canvas Camera
+            Canvas canvas = go.GetComponentInChildren<Canvas>();
+            if (canvas != null)
             {
-                tm.font = labelFontLegacy;
-                var mr = go.GetComponent<MeshRenderer>();
-                if (labelFontLegacy.material != null) mr.sharedMaterial = labelFontLegacy.material;
+                canvas.worldCamera = mainCamera;
             }
 
-            tm.fontSize = Mathf.Max(1, labelFontSize);
-            tm.characterSize = Mathf.Max(0.001f, labelCharacterSize);
-            tm.color = labelColor;
-
-            var rend = go.GetComponent<MeshRenderer>();
-            if (rend != null && rend.sharedMaterial != null)
+            // Setup TMP Text
+            TMP_Text tmp = go.GetComponentInChildren<TMP_Text>();
+            if (tmp != null)
             {
-                rend.material = new Material(rend.sharedMaterial);
-                rend.material.color = labelColor;
+                tmp.text = txt;
+            }
+            else
+            {
+                // Fallback to legacy if TMP_Text not found (though unlikely given requirements)
+                TextMesh tm = go.GetComponentInChildren<TextMesh>();
+                if (tm != null) tm.text = txt;
             }
 
-            _labels.Add(tm);
+            _labels.Add(go);
         }
     }
 
@@ -152,7 +156,7 @@ public class GridGenerator : MonoBehaviour
 
     void ClearLabels()
     {
-        foreach (var t in _labels) if (t) Destroy(t.gameObject);
+        foreach (var go in _labels) if (go) Destroy(go);
         _labels.Clear();
     }
 
