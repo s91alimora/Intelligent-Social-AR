@@ -202,7 +202,7 @@ public class SessionController : MonoBehaviour
         // Spawn Avatars Line Up
         Debug.Log("SessionController: Phase 1 Setup. Spawning avatars.");
         // "Line up on the side". Let's say left of grid.
-        Vector3 startPos = gridGenerator ? gridGenerator.GridToWorld(0, -2) : Vector3.zero; // 2 columns left
+        Vector3 startPos = gridGenerator ? gridGenerator.GridToWorld(0, 4) : Vector3.zero; // 2 columns left
         for (int i = 1; i <= 4; i++)
         {
             string id = $"agent_{i}";
