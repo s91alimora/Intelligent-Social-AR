@@ -88,9 +88,16 @@ public class AgentAugmentationInteracter : MonoBehaviour
         Transform root = canvas.transform.Find("Individual AR Augmentation");
         if (root == null) return;
 
-        // 3. Populate Avatar ID
+        // 3. Populate Avatar ID & Name
         TextMeshProUGUI idText = FindComponentByName<TextMeshProUGUI>(root, "Avatar ID");
         if (idText != null) idText.text = agentIdx;
+
+        // Extract name from ConversationalAgent component
+        var agtComp = agent.GetComponent<ConversationalAgent>();
+        string displayName = agtComp != null ? agtComp.displayName : agent.name;
+        
+        TextMeshProUGUI nameText = FindComponentByName<TextMeshProUGUI>(root, "Avatar Name");
+        if (nameText != null) nameText.text = displayName;
 
         // 4. Populate Individual Summary
         TextMeshProUGUI summaryText = FindComponentByName<TextMeshProUGUI>(root, "Individual Summary");

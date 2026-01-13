@@ -215,6 +215,7 @@ public class SessionController : MonoBehaviour
             var agt = go.GetComponent<ConversationalAgent>();
             if (!agt) agt = go.AddComponent<ConversationalAgent>();
             agt.agentName = id;
+            agt.displayName = prefab.name; // Preserve original prefab name (e.g. Tony)
             
             // Ensure TTS is ready
             var tts = go.GetComponent<CrossPlatformTTS>();

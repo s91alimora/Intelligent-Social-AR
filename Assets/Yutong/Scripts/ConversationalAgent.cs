@@ -5,8 +5,11 @@ using System.Collections.Generic;
 [RequireComponent(typeof(CrossPlatformTTS))]
 public class ConversationalAgent : MonoBehaviour
 {
-    [Tooltip("Optional display name; defaults to GameObject name")]
+    [Tooltip("Internal ID name (agent_1, etc.)")]
     public string agentName;
+
+    [Tooltip("Human-readable name from prefab (Tony, etc.)")]
+    public string displayName;
 
     [TextArea(2, 5)]
     public List<string> sentences = new List<string>();

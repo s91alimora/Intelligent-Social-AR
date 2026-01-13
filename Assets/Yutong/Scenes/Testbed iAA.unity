@@ -5022,7 +5022,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 1
+  m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
   m_textAlignment: 65535
@@ -5375,6 +5375,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agentName: agent_3
+  displayName: 
   sentences:
   - Yeah I agree, I have a hard time to figure out the the data structure that should
     be used for the first assignment
@@ -5966,6 +5967,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agentName: agent_2
+  displayName: 
   sentences:
   - I think it is alright in general but some of the homeworking is giving me a headache
   - "Totally\u2014maybe we set up a study session and hit office hours to clear up
@@ -7515,7 +7517,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 1
+  m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
   m_textAlignment: 65535
@@ -8093,58 +8095,6 @@ Transform:
   m_Children:
   - {fileID: 1491382796}
   m_Father: {fileID: 1596880769}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1092466343
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1092466345}
-  - component: {fileID: 1092466344}
-  m_Layer: 0
-  m_Name: Agent Select Manager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1092466344
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1092466343}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bd4694e6f397a4d489788878afe8efcb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rayInteractor: {fileID: 1213469406}
-  maxRayDistance: 10
-  agentLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  uiHeight: 0.6
-  uiPanelSize: {x: 0.35, y: 0.16}
-  uiPanelSprite: {fileID: 0}
---- !u!4 &1092466345
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1092466343}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.08834}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1105909535
 GameObject:
@@ -12532,6 +12482,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agentName: agent_1
+  displayName: 
   sentences:
   - What do you think about the data structure and algorithm class for this semester?
   - I hope the next few courses would give us a break.
@@ -14784,6 +14735,5 @@ SceneRoots:
   - {fileID: 1370252964}
   - {fileID: 1072045598}
   - {fileID: 42984272}
-  - {fileID: 1092466345}
   - {fileID: 301031935}
   - {fileID: 1256512750}
