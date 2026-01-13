@@ -273,10 +273,11 @@ public class AgentAugmentationInteracter : MonoBehaviour
     private void ShowCanvas(GameObject agent)
     {
         Canvas canvas = GetAgentCanvas(agent);
+        GameObject rotationOrigin = canvas.transform.parent.gameObject;
         if (canvas != null)
         {
             // Face the camera before showing (Y-axis only billboard)
-            // FaceCameraYOnly(canvas.transform);
+            FaceCameraYOnly(rotationOrigin.transform);
 
             canvas.gameObject.SetActive(true);
             if (canvas.renderMode == RenderMode.WorldSpace)
@@ -298,7 +299,7 @@ public class AgentAugmentationInteracter : MonoBehaviour
             // LookRotation expects a forward vector. 
             // Since UI usually faces 'forward', we might need to adjust based on UI orientation.
             // In most Unity UI setups, the 'back' of the canvas faces the camera to be readable.
-            target.rotation = Quaternion.LookRotation(-directionToCamera); 
+            target.rotation = Quaternion.LookRotation(directionToCamera); 
         }
     }
 
