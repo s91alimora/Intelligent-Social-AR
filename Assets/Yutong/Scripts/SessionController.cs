@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.XR;
 
 [DisallowMultipleComponent]
 public class SessionController : MonoBehaviour
@@ -731,11 +732,49 @@ public class SessionController : MonoBehaviour
 
     private IEnumerator WaitForKey(KeyCode key)
     {
-        // Wait 1 frame to ensure we don't catch a GetKeyDown from the previous step
-        yield return null;
-        while (!Input.GetKeyDown(key) && !Input.GetKeyDown(KeyCode.JoystickButton0))
+        Debug.Log($"[SessionController] Waiting for {key} or Quest 'A' button...");
+        
+        // Initial safety buffer to prevent accidental pass-through
+        yield return new WaitForSeconds(0.4f);
+
+        bool progressionTriggered = false;
+
+        while (!progressionTriggered)
         {
+            // 1. Check Keyboard
+            if (Input.GetKeyDown(key))
+            {
+                Debug.Log($"[SessionController] Keyboard {key} detected.");
+                progressionTriggered = true;
+                break;
+            }
+
+            // 2. Check VR Controllers (A button / PrimaryButton)
+            var devices = new List<InputDevice>();
+            InputDevices.GetDevicesWithCharacteristics(InputDeviceCharacteristics.Right | InputDeviceCharacteristics.Controller, devices);
+            
+            foreach (var device in devices)
+            {
+                if (device.TryGetFeatureValue(CommonUsages.primaryButton, out bool isPressed) && isPressed)
+                {
+                    Debug.Log("[SessionController] VR 'A' button detected. Waiting for release...");
+                    
+                    // Wait for release to prevent skipping next phase
+                    while (isPressed)
+                    {
+                        device.TryGetFeatureValue(CommonUsages.primaryButton, out isPressed);
+                        yield return null;
+                    }
+                    
+                    Debug.Log("[SessionController] VR 'A' button released.");
+                    progressionTriggered = true;
+                    break;
+                }
+            }
+
             yield return null;
         }
+
+        Debug.Log("[SessionController] Progressing to next step.");
     }
 }
