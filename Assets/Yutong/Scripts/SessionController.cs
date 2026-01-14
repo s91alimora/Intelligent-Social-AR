@@ -16,6 +16,11 @@ public class SessionController : MonoBehaviour
     public enum SessionPhase { Setup, GridMove, Discussion, AR_UI }
     public SessionPhase CurrentPhase { get; private set; }
 
+    public enum StudyCondition { iAA, ARR }
+    
+    [Header("Study State")]
+    public StudyCondition studyCondition = StudyCondition.iAA;
+
     [Header("Configuration")]
     public List<TextAsset> scriptFiles; // Assign Script_1 to Script_4
     public List<GameObject> availableMaleAvatars;
@@ -24,14 +29,18 @@ public class SessionController : MonoBehaviour
     [Header("Scene References")]
     public GridGenerator gridGenerator;
     public ConversationalAgentsManager manager;
-    //public Text wallQuestionText; // Assign the text on the wall
-    public TextMeshProUGUI wallQuestionText;
+   
 
     [Header("Settings")]
     public float moveDuration = 2f;
     public float lineUpSpacing = 1.2f;
+    
+    [Header("ARR Settings")]
+    public Transform[] agentOrigins = new Transform[4];
 
     [Header("Augmentation UI")]
+    //public Text wallQuestionText; // Assign the text on the wall
+    public TextMeshProUGUI wallQuestionText;
     public GameObject augmentationPanel;
     public TextMeshProUGUI suggestionsText;
     public TextMeshProUGUI themesText;
@@ -120,6 +129,20 @@ public class SessionController : MonoBehaviour
         var trial = _trialSequence[trialIndex];
         _currentQuestionData = ParseQuestionData(trial.script, trial.questionIndex);
 
+        if (studyCondition == StudyCondition.iAA)
+        {
+            yield return StartTrial_iAA(trialIndex);
+        }
+        else if (studyCondition == StudyCondition.ARR)
+        {
+            yield return StartTrial_ARR(trialIndex);
+        }
+    }
+
+    private IEnumerator StartTrial_iAA(int trialIndex)
+    {
+        var trial = _trialSequence[trialIndex];
+        
         // Phase 1: Setup (Line Up)
         CurrentPhase = SessionPhase.Setup;
         SetupPhase1();
@@ -143,7 +166,49 @@ public class SessionController : MonoBehaviour
 
         // Phase 4: AR UI
         CurrentPhase = SessionPhase.AR_UI;
-        Debug.Log("SessionController: Phase 4: AR UI Enabled. Interact with agents.");
+        yield return Phase_AR_UI(trial);
+
+        // Wait for Space -> Next Trial
+        Debug.Log($"SessionController: Trial {trialIndex} complete. Press Space for next.");
+        yield return WaitForKey(KeyCode.Space);
+
+        // Next
+        FinishTrial();
+    }
+
+    private IEnumerator StartTrial_ARR(int trialIndex)
+    {
+        var trial = _trialSequence[trialIndex];
+        
+        // Phase 1: Setup (Origins)
+        CurrentPhase = SessionPhase.Setup;
+        SetupPhase1();
+
+        // Wait for Space -> Phase 2 (Discussion)
+        yield return WaitForKey(KeyCode.Space);
+
+        // Phase 2: Discussion
+        CurrentPhase = SessionPhase.Discussion;
+        yield return DiscussionPhase3();
+
+        // Wait for Space -> Phase 3 (AR UI)
+        yield return WaitForKey(KeyCode.Space);
+
+        // Phase 3: AR UI
+        CurrentPhase = SessionPhase.AR_UI;
+        yield return Phase_AR_UI(trial);
+
+        // Wait for Space -> Next Trial
+        Debug.Log($"SessionController: Trial {trialIndex} complete. Press Space for next.");
+        yield return WaitForKey(KeyCode.Space);
+
+        // Next
+        FinishTrial();
+    }
+
+    private IEnumerator Phase_AR_UI((TextAsset script, int questionIndex) trial)
+    {
+        Debug.Log("SessionController: AR UI Enabled. Interact with agents.");
         
         // Show Augmentations
         ShowGroupAugmentations();
@@ -157,12 +222,10 @@ public class SessionController : MonoBehaviour
         }
         
         yield return new WaitForSeconds(0.5f); // Ensure UI/Phase state is clear
+    }
 
-        // Wait for Space -> Next Trial
-        Debug.Log($"SessionController: Trial {trialIndex} complete. Press Space for next.");
-        yield return WaitForKey(KeyCode.Space);
-
-        // Next
+    private void FinishTrial()
+    {
         if (interacter != null) interacter.SetActive(false);
         _currentTrialIndex++;
         StartCoroutine(StartTrial(_currentTrialIndex));
@@ -180,13 +243,17 @@ public class SessionController : MonoBehaviour
         foreach (var agent in _currentAgents) StopSpeakingAndDestroy(agent);
         _currentAgents.Clear();
 
-        // Build Grid (Static 5x4)
-        if (gridGenerator)
+        // iAA specific setup
+        if (studyCondition == StudyCondition.iAA)
         {
-            Debug.Log("SessionController: Building Grid 5 Rows x 4 Cols");
-            gridGenerator.labelAlignment = GridGenerator.LabelAlignment.Left;
-            gridGenerator.Build(5, 4); 
-            gridGenerator.BuildLabels(new List<string> { "Very Bad", "Bad", "Neutral", "Good", "Very Good" });
+            // Build Grid (Static 5x4)
+            if (gridGenerator)
+            {
+                Debug.Log("SessionController: Building Grid 5 Rows x 4 Cols");
+                gridGenerator.labelAlignment = GridGenerator.LabelAlignment.Left;
+                gridGenerator.Build(5, 4); 
+                gridGenerator.BuildLabels(new List<string> { "Very Bad", "Bad", "Neutral", "Good", "Very Good" });
+            }
         }
 
         // Show Question
@@ -199,34 +266,61 @@ public class SessionController : MonoBehaviour
             Debug.LogWarning("SessionController: Wall Question Text not assigned.");
         }
 
-        // Spawn Avatars Line Up
-        Debug.Log("SessionController: Phase 1 Setup. Spawning avatars.");
-        // "Line up on the side". Let's say left of grid.
-        Vector3 startPos = gridGenerator ? gridGenerator.GridToWorld(0, 4) : Vector3.zero; // 2 columns left
-        for (int i = 1; i <= 4; i++)
+        // Spawn Avatars
+        Debug.Log($"SessionController: Phase 1 Setup ({studyCondition}). Spawning avatars.");
+        
+        if (studyCondition == StudyCondition.iAA)
         {
-            string id = $"agent_{i}";
-            var prefab = _agentMapping[id];
-            Vector3 pos = startPos + new Vector3(0, 0, (i - 1) * lineUpSpacing); 
-            
-            // FIX: Face the camera (Vector3.left) 
-            var go = Instantiate(prefab, pos, Quaternion.LookRotation(Vector3.left)); 
-            go.name = id;
-            var agt = go.GetComponent<ConversationalAgent>();
-            if (!agt) agt = go.AddComponent<ConversationalAgent>();
-            agt.agentName = id;
-            agt.displayName = prefab.name; // Preserve original prefab name (e.g. Tony)
-            
-            // Ensure TTS is ready
-            var tts = go.GetComponent<CrossPlatformTTS>();
-            if (!tts) tts = go.AddComponent<CrossPlatformTTS>();
-            
-            _currentAgents.Add(agt);
-
-            // Hide individual augmentation canvas initially
-            var canvas = go.GetComponentInChildren<Canvas>(true);
-            if (canvas != null) canvas.gameObject.SetActive(false);
+            // "Line up on the side". Let's say left of grid.
+            Vector3 startPos = gridGenerator ? gridGenerator.GridToWorld(0, 4) : Vector3.zero; // 2 columns left
+            for (int i = 1; i <= 4; i++)
+            {
+                string id = $"agent_{i}";
+                var prefab = _agentMapping[id];
+                Vector3 pos = startPos + new Vector3(0, 0, (i - 1) * lineUpSpacing); 
+                SpawnAgent(id, prefab, pos, Quaternion.LookRotation(Vector3.left));
+            }
         }
+        else if (studyCondition == StudyCondition.ARR)
+        {
+            // Spawn at origins
+            for (int i = 1; i <= 4; i++)
+            {
+                string id = $"agent_{i}";
+                var prefab = _agentMapping[id];
+                Transform origin = agentOrigins[i - 1];
+                
+                if (origin != null)
+                {
+                    SpawnAgent(id, prefab, origin.position, origin.rotation);
+                }
+                else
+                {
+                    Debug.LogWarning($"SessionController: Agent Origin {i} is missing!");
+                    SpawnAgent(id, prefab, Vector3.zero, Quaternion.identity);
+                }
+            }
+        }
+    }
+
+    private void SpawnAgent(string id, GameObject prefab, Vector3 pos, Quaternion rot)
+    {
+        var go = Instantiate(prefab, pos, rot); 
+        go.name = id;
+        var agt = go.GetComponent<ConversationalAgent>();
+        if (!agt) agt = go.AddComponent<ConversationalAgent>();
+        agt.agentName = id;
+        agt.displayName = prefab.name; // Preserve original prefab name (e.g. Tony)
+        
+        // Ensure TTS is ready
+        var tts = go.GetComponent<CrossPlatformTTS>();
+        if (!tts) tts = go.AddComponent<CrossPlatformTTS>();
+        
+        _currentAgents.Add(agt);
+
+        // Hide individual augmentation canvas initially
+        var canvas = go.GetComponentInChildren<Canvas>(true);
+        if (canvas != null) canvas.gameObject.SetActive(false);
     }
 
     private IEnumerator MovePhase2()
