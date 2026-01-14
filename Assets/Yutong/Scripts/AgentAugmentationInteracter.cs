@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using System.IO;
 using System.Text.RegularExpressions;
 using TMPro;
+using UnityEngine.Networking;
 
 public class AgentAugmentationInteracter : MonoBehaviour
 {
@@ -143,7 +144,7 @@ public class AgentAugmentationInteracter : MonoBehaviour
                 if (seatingImage != null)
                 {
                     string imagePath = ExtractJsonString(json, "ind_Seating", statsIdx);
-                    LoadImageToUI(imagePath, seatingImage);
+                    StartCoroutine(LoadImageToUI(imagePath, seatingImage));
                 }
             }
         }
@@ -241,25 +242,56 @@ public class AgentAugmentationInteracter : MonoBehaviour
         return formatted;
     }
 
-    private void LoadImageToUI(string relativePath, Image uiImage)
+    private IEnumerator LoadImageToUI(string relativePath, Image uiImage)
     {
-        if (string.IsNullOrEmpty(relativePath)) return;
-        string fullPath = relativePath.StartsWith("Assets/") 
-            ? Path.Combine(Application.dataPath, relativePath.Substring(7)) 
-            : Path.Combine(Application.dataPath, relativePath);
+        if (string.IsNullOrEmpty(relativePath)) yield break;
 
-        if (File.Exists(fullPath))
+        // 1. Try local file path (Primary for Editor/PC)
+        string localPath = "";
+        if (relativePath.StartsWith("Assets/"))
+            localPath = Path.Combine(Application.dataPath, relativePath.Substring(7));
+        else
+            localPath = Path.Combine(Application.dataPath, relativePath);
+
+        if (Application.platform != RuntimePlatform.Android && File.Exists(localPath))
         {
-            byte[] fileData = File.ReadAllBytes(fullPath);
+            byte[] fileData = File.ReadAllBytes(localPath);
+            Texture2D tex = new Texture2D(2, 2);
+            if (tex.LoadImage(fileData))
+            {
+                uiImage.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+                yield break;
+            }
+        }
+
+        // 2. Fallback to StreamingAssets (For Standalone Quest/Android)
+        string streamingPath = Path.Combine(Application.streamingAssetsPath, relativePath);
+        
+        if (streamingPath.Contains("://") || Application.platform == RuntimePlatform.Android)
+        {
+            using (UnityWebRequest uwr = UnityWebRequestTexture.GetTexture(streamingPath))
+            {
+                yield return uwr.SendWebRequest();
+
+                if (uwr.result == UnityWebRequest.Result.Success)
+                {
+                    Texture2D tex = DownloadHandlerTexture.GetContent(uwr);
+                    uiImage.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+                }
+                else
+                {
+                    Debug.LogWarning($"[AgentAugmentationInteracter] Failed to load from StreamingAssets: {uwr.error}");
+                }
+            }
+        }
+        else if (File.Exists(streamingPath))
+        {
+            byte[] fileData = File.ReadAllBytes(streamingPath);
             Texture2D tex = new Texture2D(2, 2);
             if (tex.LoadImage(fileData))
             {
                 uiImage.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
             }
-        }
-        else
-        {
-            Debug.LogWarning($"[AgentAugmentationInteracter] Image not found: {fullPath}");
         }
     }
 

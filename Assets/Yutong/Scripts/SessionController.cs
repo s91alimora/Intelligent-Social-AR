@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.XR;
+using UnityEngine.Networking;
 
 [DisallowMultipleComponent]
 public class SessionController : MonoBehaviour
@@ -533,9 +534,9 @@ public class SessionController : MonoBehaviour
                 string movePath = ExtractJsonString(fullJson, "grp_Move", aprGrpSumsIdx);
                 string simMatPath = ExtractJsonString(fullJson, "grp_Sim_Mat", aprGrpSumsIdx);
 
-                if (speakingSumImage != null) LoadImageToUI(speakingPath, speakingSumImage);
-                if (grpMoveImage != null) LoadImageToUI(movePath, grpMoveImage);
-                if (grpSimMatImage != null) LoadImageToUI(simMatPath, grpSimMatImage);
+                if (speakingSumImage != null) StartCoroutine(LoadImageToUI(speakingPath, speakingSumImage));
+                if (grpMoveImage != null) StartCoroutine(LoadImageToUI(movePath, grpMoveImage));
+                if (grpSimMatImage != null) StartCoroutine(LoadImageToUI(simMatPath, grpSimMatImage));
             }
         }
         else if (studyCondition == StudyCondition.ARR)
@@ -602,39 +603,59 @@ public class SessionController : MonoBehaviour
         return formatted;
     }
 
-    private void LoadImageToUI(string relativePath, Image uiImage)
+    private IEnumerator LoadImageToUI(string relativePath, Image uiImage)
     {
-        if (string.IsNullOrEmpty(relativePath)) return;
+        if (string.IsNullOrEmpty(relativePath)) yield break;
 
-        // Convert relative path (Assets/...) to absolute path
-        // Application.dataPath is C:/.../Assets
-        // JSON sequence: Assets/Augmentation Images/...
-        // So we need to handle the "Assets/" prefix carefully.
-        
-        string fullPath = "";
+        // 1. Try local file path (Primary for Editor/PC)
+        string localPath = "";
         if (relativePath.StartsWith("Assets/"))
-        {
-            fullPath = Path.Combine(Application.dataPath, relativePath.Substring(7));
-        }
+            localPath = Path.Combine(Application.dataPath, relativePath.Substring(7));
         else
-        {
-            fullPath = Path.Combine(Application.dataPath, relativePath);
-        }
+            localPath = Path.Combine(Application.dataPath, relativePath);
 
-        if (File.Exists(fullPath))
+        if (Application.platform != RuntimePlatform.Android && File.Exists(localPath))
         {
-            byte[] fileData = File.ReadAllBytes(fullPath);
+            byte[] fileData = File.ReadAllBytes(localPath);
             Texture2D tex = new Texture2D(2, 2);
             if (tex.LoadImage(fileData))
             {
-                // Create sprite
-                Sprite sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
-                uiImage.sprite = sprite;
+                uiImage.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+                yield break;
             }
         }
-        else
+
+        // 2. Fallback to StreamingAssets (For Standalone Quest/Android)
+        // Extract filename from the path (e.g., Augmentation Images/Group/.../img.jpg)
+        // We assume the user duplicated the folder structure into StreamingAssets
+        string streamingPath = Path.Combine(Application.streamingAssetsPath, relativePath);
+        
+        // On Android, StreamingAssets is inside the APK and must be read via UnityWebRequest
+        if (streamingPath.Contains("://") || Application.platform == RuntimePlatform.Android)
         {
-            Debug.LogWarning($"SessionController: Image file not found at {fullPath}");
+            using (UnityWebRequest uwr = UnityWebRequestTexture.GetTexture(streamingPath))
+            {
+                yield return uwr.SendWebRequest();
+
+                if (uwr.result == UnityWebRequest.Result.Success)
+                {
+                    Texture2D tex = DownloadHandlerTexture.GetContent(uwr);
+                    uiImage.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+                }
+                else
+                {
+                    Debug.LogWarning($"[SessionController] Failed to load from StreamingAssets: {uwr.error} at {streamingPath}");
+                }
+            }
+        }
+        else if (File.Exists(streamingPath))
+        {
+            byte[] fileData = File.ReadAllBytes(streamingPath);
+            Texture2D tex = new Texture2D(2, 2);
+            if (tex.LoadImage(fileData))
+            {
+                uiImage.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+            }
         }
     }
 
