@@ -1,0 +1,91 @@
+using UnityEngine;
+using UnityEditor;
+using System.Collections.Generic;
+
+[CustomEditor(typeof(SessionController))]
+public class SessionControllerEditor : Editor
+{
+    private SerializedProperty studyCondition;
+    private SerializedProperty scriptFiles;
+    private SerializedProperty availableMaleAvatars;
+    private SerializedProperty availableFemaleAvatars;
+    private SerializedProperty gridGenerator;
+    private SerializedProperty manager;
+    private SerializedProperty moveDuration;
+    private SerializedProperty lineUpSpacing;
+    private SerializedProperty agentOrigins;
+    private SerializedProperty wallQuestionText;
+    private SerializedProperty augmentationPanel;
+    private SerializedProperty suggestionsText;
+    private SerializedProperty themesText;
+    private SerializedProperty speakingSumImage;
+    private SerializedProperty grpMoveImage;
+    private SerializedProperty grpSimMatImage;
+    private SerializedProperty interacter;
+
+    private void OnEnable()
+    {
+        studyCondition = serializedObject.FindProperty("studyCondition");
+        scriptFiles = serializedObject.FindProperty("scriptFiles");
+        availableMaleAvatars = serializedObject.FindProperty("availableMaleAvatars");
+        availableFemaleAvatars = serializedObject.FindProperty("availableFemaleAvatars");
+        gridGenerator = serializedObject.FindProperty("gridGenerator");
+        manager = serializedObject.FindProperty("manager");
+        moveDuration = serializedObject.FindProperty("moveDuration");
+        lineUpSpacing = serializedObject.FindProperty("lineUpSpacing");
+        agentOrigins = serializedObject.FindProperty("agentOrigins");
+        wallQuestionText = serializedObject.FindProperty("wallQuestionText");
+        augmentationPanel = serializedObject.FindProperty("augmentationPanel");
+        suggestionsText = serializedObject.FindProperty("suggestionsText");
+        themesText = serializedObject.FindProperty("themesText");
+        speakingSumImage = serializedObject.FindProperty("speakingSumImage");
+        grpMoveImage = serializedObject.FindProperty("grpMoveImage");
+        grpSimMatImage = serializedObject.FindProperty("grpSimMatImage");
+        interacter = serializedObject.FindProperty("interacter");
+    }
+
+    public override void OnInspectorGUI()
+    {
+        serializedObject.Update();
+
+        EditorGUILayout.LabelField("Study Setup", EditorStyles.boldLabel);
+        EditorGUILayout.PropertyField(studyCondition);
+        
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Base Configuration", EditorStyles.boldLabel);
+        EditorGUILayout.PropertyField(scriptFiles, true);
+        EditorGUILayout.PropertyField(availableMaleAvatars, true);
+        EditorGUILayout.PropertyField(availableFemaleAvatars, true);
+        EditorGUILayout.PropertyField(manager);
+
+        EditorGUILayout.Space();
+        
+        SessionController.StudyCondition condition = (SessionController.StudyCondition)studyCondition.enumValueIndex;
+
+        if (condition == SessionController.StudyCondition.iAA)
+        {
+            EditorGUILayout.LabelField("iAA (Grid) Settings", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(gridGenerator);
+            EditorGUILayout.PropertyField(moveDuration);
+            EditorGUILayout.PropertyField(lineUpSpacing);
+        }
+        else if (condition == SessionController.StudyCondition.ARR)
+        {
+            EditorGUILayout.LabelField("ARR (Table/Origins) Settings", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(agentOrigins, true);
+        }
+
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Augmentation UI", EditorStyles.boldLabel);
+        EditorGUILayout.PropertyField(wallQuestionText);
+        EditorGUILayout.PropertyField(augmentationPanel);
+        EditorGUILayout.PropertyField(suggestionsText);
+        EditorGUILayout.PropertyField(themesText);
+        EditorGUILayout.PropertyField(speakingSumImage);
+        EditorGUILayout.PropertyField(grpMoveImage);
+        EditorGUILayout.PropertyField(grpSimMatImage);
+        EditorGUILayout.PropertyField(interacter);
+
+        serializedObject.ApplyModifiedProperties();
+    }
+}
