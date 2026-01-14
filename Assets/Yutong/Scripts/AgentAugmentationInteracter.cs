@@ -61,19 +61,19 @@ public class AgentAugmentationInteracter : MonoBehaviour
         }
     }
 
-    public void PopulateAll(List<ConversationalAgent> agents, string fullJson, int questionIndex)
+    public void PopulateAll(List<ConversationalAgent> agents, string fullJson, int questionIndex, SessionController.StudyCondition condition)
     {
         string qKey = $"question_{questionIndex}_Data";
         int startIdx = fullJson.IndexOf(qKey);
         if (startIdx == -1) return;
-
+        
         foreach (var agent in agents)
         {
-            PopulateAgentUI(agent.gameObject, fullJson, startIdx);
+            PopulateAgentUI(agent.gameObject, fullJson, startIdx, condition);
         }
     }
 
-    private void PopulateAgentUI(GameObject agent, string json, int startIdx)
+    private void PopulateAgentUI(GameObject agent, string json, int startIdx, SessionController.StudyCondition condition)
     {
         // 1. Identify agent index (e.g. agent_1 -> 1)
         string agentName = agent.name; // agent_1, agent_2, etc.
@@ -107,26 +107,98 @@ public class AgentAugmentationInteracter : MonoBehaviour
             summaryText.text = FormatBulletinPoints(summaryData);
         }
 
-        // 5. Populate Stats
-        TextMeshProUGUI spokenText = FindComponentByName<TextMeshProUGUI>(root, "Times Spoken First");
-        TextMeshProUGUI seatedText = FindComponentByName<TextMeshProUGUI>(root, "Times Seated First");
-        
-        // Find the stats block for this agent
-        string statsKey = $"{agentName}_apr_Stats";
-        int statsIdx = json.IndexOf($"\"{statsKey}\"", startIdx);
-        if (statsIdx != -1)
-        {
-            if (spokenText != null) spokenText.text = ExtractJsonValue(json, "times_Spoken_First", statsIdx);
-            if (seatedText != null) seatedText.text = ExtractJsonValue(json, "times_Seated_First", statsIdx);
+        // 5. Populate Stats and Toggle Visibility
+        // iAA Blocks
+        GameObject spokenFirstObj = FindGameObjectByName(root, "Times Spoken First");
+        GameObject seatedFirstObj = FindGameObjectByName(root, "Times Seated First");
+        GameObject seatingPatternObj = FindGameObjectByName(root, "Individual Seating Pattern");
 
-            // 6. Populate Seating Pattern Image
-            Image seatingImage = FindComponentByName<Image>(root, "Individual Seating Pattern");
-            if (seatingImage != null)
+        // ARR Blocks
+        GameObject durationObj = FindGameObjectByName(root, "Duration of Speech");
+        GameObject timesSpokenObj = FindGameObjectByName(root, "Times Spoken");
+        GameObject wordsSpokenObj = FindGameObjectByName(root, "Words Spoken");
+
+        if (condition == SessionController.StudyCondition.iAA)
+        {
+            // Set Visiblity
+            if (spokenFirstObj != null) spokenFirstObj.SetActive(true);
+            if (seatedFirstObj != null) seatedFirstObj.SetActive(true);
+            if (seatingPatternObj != null) seatingPatternObj.SetActive(true);
+            if (durationObj != null) durationObj.SetActive(false);
+            if (timesSpokenObj != null) timesSpokenObj.SetActive(false);
+            if (wordsSpokenObj != null) wordsSpokenObj.SetActive(false);
+
+            // Populate iAA Stats
+            string statsKey = $"{agentName}_apr_Stats";
+            int statsIdx = json.IndexOf($"\"{statsKey}\"", startIdx);
+            if (statsIdx != -1)
             {
-                string imagePath = ExtractJsonString(json, "ind_Seating", statsIdx);
-                LoadImageToUI(imagePath, seatingImage);
+                TextMeshProUGUI spokenText = spokenFirstObj != null ? spokenFirstObj.GetComponentInChildren<TextMeshProUGUI>(true) : null;
+                TextMeshProUGUI seatedText = seatedFirstObj != null ? seatedFirstObj.GetComponentInChildren<TextMeshProUGUI>(true) : null;
+
+                if (spokenText != null) spokenText.text = ExtractJsonValue(json, "times_Spoken_First", statsIdx);
+                if (seatedText != null) seatedText.text = ExtractJsonValue(json, "times_Seated_First", statsIdx);
+
+                Image seatingImage = seatingPatternObj != null ? seatingPatternObj.GetComponent<Image>() : null;
+                if (seatingImage != null)
+                {
+                    string imagePath = ExtractJsonString(json, "ind_Seating", statsIdx);
+                    LoadImageToUI(imagePath, seatingImage);
+                }
             }
         }
+        else if (condition == SessionController.StudyCondition.ARR)
+        {
+            // Set Visiblity
+            if (spokenFirstObj != null) spokenFirstObj.SetActive(false);
+            if (seatedFirstObj != null) seatedFirstObj.SetActive(false);
+            if (seatingPatternObj != null) seatingPatternObj.SetActive(false);
+            if (durationObj != null) durationObj.SetActive(true);
+            if (timesSpokenObj != null) timesSpokenObj.SetActive(true);
+            if (wordsSpokenObj != null) wordsSpokenObj.SetActive(true);
+
+            // Populate ARR Stats
+            string trdStatsKey = $"{agentName}_trd_Stats";
+            int trdIdx = json.IndexOf($"\"{trdStatsKey}\"", startIdx);
+            if (trdIdx != -1)
+            {
+                // Note: The values are likely in children TMPs since there are "Titles" in the screenshot
+                // We'll look for TMPs that are NOT the titles if possible, or usually just the first/second one.
+                // Assuming the structure from screenshot: Parent -> Title, Parent -> Value.
+                // A safer way is to find the component in the parent but verify it's not the title.
+                
+                TextMeshProUGUI durText = GetValueTMP(durationObj);
+                TextMeshProUGUI timesText = GetValueTMP(timesSpokenObj);
+                TextMeshProUGUI wordsText = GetValueTMP(wordsSpokenObj);
+
+                if (durText != null) durText.text = ExtractJsonString(json, "dur_Spoken", trdIdx);
+                if (timesText != null) timesText.text = ExtractJsonValue(json, "times_Spoken", trdIdx);
+                if (wordsText != null) wordsText.text = ExtractJsonValue(json, "words_Spoken", trdIdx);
+            }
+        }
+    }
+
+    private GameObject FindGameObjectByName(Transform root, string name)
+    {
+        foreach (Transform child in root)
+        {
+            if (child.name == name) return child.gameObject;
+            GameObject found = FindGameObjectByName(child, name);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    private TextMeshProUGUI GetValueTMP(GameObject parent)
+    {
+        if (parent == null) return null;
+        var tmps = parent.GetComponentsInChildren<TextMeshProUGUI>(true);
+        foreach (var tmp in tmps)
+        {
+            // Skip title components by name heuristic
+            if (!tmp.name.Contains("Title")) return tmp;
+        }
+        return tmps.Length > 0 ? tmps[0] : null;
     }
 
     private T FindComponentByName<T>(Transform root, string name) where T : Component
@@ -152,8 +224,9 @@ public class AgentAugmentationInteracter : MonoBehaviour
 
     private string ExtractJsonValue(string json, string key, int searchStart)
     {
-        var match = Regex.Match(json.Substring(searchStart), $"\"{key}\"\\s*:\\s*(\\d+)");
-        return match.Success ? match.Groups[1].Value : "0";
+        // Improved: Matches "key" : value (can be number, boolean, or string if we use the right pattern)
+        var match = Regex.Match(json.Substring(searchStart), $"\"{key}\"\\s*:\\s*([^,\\s}}]+)");
+        return match.Success ? match.Groups[1].Value.Trim('\"') : "0";
     }
 
     private string FormatBulletinPoints(string text)

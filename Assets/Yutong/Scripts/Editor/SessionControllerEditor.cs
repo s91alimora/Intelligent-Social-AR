@@ -21,6 +21,8 @@ public class SessionControllerEditor : Editor
     private SerializedProperty speakingSumImage;
     private SerializedProperty grpMoveImage;
     private SerializedProperty grpSimMatImage;
+    private SerializedProperty turnTakingText;
+    private SerializedProperty dissonantOpinionsText;
     private SerializedProperty interacter;
 
     private void OnEnable()
@@ -41,6 +43,8 @@ public class SessionControllerEditor : Editor
         speakingSumImage = serializedObject.FindProperty("speakingSumImage");
         grpMoveImage = serializedObject.FindProperty("grpMoveImage");
         grpSimMatImage = serializedObject.FindProperty("grpSimMatImage");
+        turnTakingText = serializedObject.FindProperty("turnTakingText");
+        dissonantOpinionsText = serializedObject.FindProperty("dissonantOpinionsText");
         interacter = serializedObject.FindProperty("interacter");
     }
 
@@ -81,9 +85,19 @@ public class SessionControllerEditor : Editor
         EditorGUILayout.PropertyField(augmentationPanel);
         EditorGUILayout.PropertyField(suggestionsText);
         EditorGUILayout.PropertyField(themesText);
-        EditorGUILayout.PropertyField(speakingSumImage);
-        EditorGUILayout.PropertyField(grpMoveImage);
-        EditorGUILayout.PropertyField(grpSimMatImage);
+        
+        if (condition == SessionController.StudyCondition.iAA)
+        {
+            EditorGUILayout.PropertyField(speakingSumImage);
+            EditorGUILayout.PropertyField(grpMoveImage);
+            EditorGUILayout.PropertyField(grpSimMatImage);
+        }
+        else if (condition == SessionController.StudyCondition.ARR)
+        {
+            EditorGUILayout.PropertyField(turnTakingText);
+            EditorGUILayout.PropertyField(dissonantOpinionsText);
+        }
+
         EditorGUILayout.PropertyField(interacter);
 
         serializedObject.ApplyModifiedProperties();

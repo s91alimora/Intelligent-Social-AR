@@ -47,6 +47,8 @@ public class SessionController : MonoBehaviour
     public Image speakingSumImage;
     public Image grpMoveImage;
     public Image grpSimMatImage;
+    public TextMeshProUGUI turnTakingText;
+    public TextMeshProUGUI dissonantOpinionsText;
     public AgentAugmentationInteracter interacter;
 
     // Internal State
@@ -216,7 +218,7 @@ public class SessionController : MonoBehaviour
         // Phase 4: Enable Individual Augmentation Interacter
         if (interacter != null) 
         {
-            interacter.PopulateAll(_currentAgents, trial.script.text, trial.questionIndex);
+            interacter.PopulateAll(_currentAgents, trial.script.text, trial.questionIndex, studyCondition);
             interacter.PreSetupCanvases(_currentAgents);
             interacter.SetActive(true);
         }
@@ -513,17 +515,46 @@ public class SessionController : MonoBehaviour
                 themesText.text = FormatBulletinPoints(themes);
         }
 
-        // 2. Extract Image Augmentations (apr_Grp_Sums)
-        int aprGrpSumsIdx = fullJson.IndexOf("\"apr_Grp_Sums\"", startIdx);
-        if (aprGrpSumsIdx != -1)
+        // 2. Extract Image or Stat Augmentations based on condition
+        if (studyCondition == StudyCondition.iAA)
         {
-            string speakingPath = ExtractJsonString(fullJson, "speaking_Sum", aprGrpSumsIdx);
-            string movePath = ExtractJsonString(fullJson, "grp_Move", aprGrpSumsIdx);
-            string simMatPath = ExtractJsonString(fullJson, "grp_Sim_Mat", aprGrpSumsIdx);
+            // Toggle visibility
+            if (speakingSumImage != null) speakingSumImage.gameObject.SetActive(true);
+            if (grpMoveImage != null) grpMoveImage.gameObject.SetActive(true);
+            if (grpSimMatImage != null) grpSimMatImage.gameObject.SetActive(true);
+            if (turnTakingText != null) turnTakingText.gameObject.SetActive(false);
+            if (dissonantOpinionsText != null) dissonantOpinionsText.gameObject.SetActive(false);
 
-            if (speakingSumImage != null) LoadImageToUI(speakingPath, speakingSumImage);
-            if (grpMoveImage != null) LoadImageToUI(movePath, grpMoveImage);
-            if (grpSimMatImage != null) LoadImageToUI(simMatPath, grpSimMatImage);
+            int aprGrpSumsIdx = fullJson.IndexOf("\"apr_Grp_Sums\"", startIdx);
+            if (aprGrpSumsIdx != -1)
+            {
+                string speakingPath = ExtractJsonString(fullJson, "speaking_Sum", aprGrpSumsIdx);
+                string movePath = ExtractJsonString(fullJson, "grp_Move", aprGrpSumsIdx);
+                string simMatPath = ExtractJsonString(fullJson, "grp_Sim_Mat", aprGrpSumsIdx);
+
+                if (speakingSumImage != null) LoadImageToUI(speakingPath, speakingSumImage);
+                if (grpMoveImage != null) LoadImageToUI(movePath, grpMoveImage);
+                if (grpSimMatImage != null) LoadImageToUI(simMatPath, grpSimMatImage);
+            }
+        }
+        else if (studyCondition == StudyCondition.ARR)
+        {
+            // Toggle visibility
+            if (speakingSumImage != null) speakingSumImage.gameObject.SetActive(false);
+            if (grpMoveImage != null) grpMoveImage.gameObject.SetActive(false);
+            if (grpSimMatImage != null) grpSimMatImage.gameObject.SetActive(false);
+            if (turnTakingText != null) turnTakingText.gameObject.SetActive(true);
+            if (dissonantOpinionsText != null) dissonantOpinionsText.gameObject.SetActive(true);
+
+            int trdGrpSumIdx = fullJson.IndexOf("\"trd_Grp_Sum\"", startIdx);
+            if (trdGrpSumIdx != -1)
+            {
+                string turnTaking = ExtractJsonValue(fullJson, "turn_Taking", trdGrpSumIdx);
+                string dissOps = ExtractJsonValue(fullJson, "no_Diss_Ops", trdGrpSumIdx);
+
+                if (turnTakingText != null) turnTakingText.text = turnTaking;
+                if (dissonantOpinionsText != null) dissonantOpinionsText.text = dissOps;
+            }
         }
     }
 
@@ -534,6 +565,17 @@ public class SessionController : MonoBehaviour
         if (match.Success)
         {
             return Regex.Unescape(match.Groups[1].Value);
+        }
+        return "";
+    }
+
+    private string ExtractJsonValue(string json, string key, int searchStart)
+    {
+        // Matches "key" : value (for numbers or booleans)
+        var match = Regex.Match(json.Substring(searchStart), $"\"{key}\"\\s*:\\s*([^,\\s}}]+)");
+        if (match.Success)
+        {
+            return match.Groups[1].Value;
         }
         return "";
     }
@@ -691,7 +733,7 @@ public class SessionController : MonoBehaviour
     {
         // Wait 1 frame to ensure we don't catch a GetKeyDown from the previous step
         yield return null;
-        while (!Input.GetKeyDown(key))
+        while (!Input.GetKeyDown(key) && !Input.GetKeyDown(KeyCode.JoystickButton0))
         {
             yield return null;
         }
