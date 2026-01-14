@@ -6,7 +6,7 @@ using System.IO;
 using UnityEditor; // EditorUtility.OpenFilePanel
 #endif
 
-#if !UNITY_EDITOR
+#if !UNITY_EDITOR && SFB_FOUND
 // Only needed in player builds if you imported StandaloneFileBrowser
 using SFB;
 #endif

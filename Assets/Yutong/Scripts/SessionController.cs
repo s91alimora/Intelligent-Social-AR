@@ -58,8 +58,7 @@ public class SessionController : MonoBehaviour
     private List<ConversationalAgent> _currentAgents = new(); // Spawned instances
     private List<(TextAsset script, int questionIndex)> _trialSequence = new();
     private int _currentTrialIndex = 0;
-    
-    // Current Trial Data
+
     private QuestionData _currentQuestionData;
 
     void Awake()
@@ -67,12 +66,32 @@ public class SessionController : MonoBehaviour
         Instance = this;
         if (gridGenerator == null) gridGenerator = FindObjectOfType<GridGenerator>();
         if (manager == null) manager = FindObjectOfType<ConversationalAgentsManager>();
+
+        // Fix for "Head-Locked" scene: Force tracking origin to Floor Level
+        // This ensures the virtual world stays static while you move physically
+        StartCoroutine(SetTrackingOriginFloor());
+    }
+
+    private IEnumerator SetTrackingOriginFloor()
+    {
+        // Wait for XR to initialize
+        yield return new WaitForSeconds(1.0f);
+        var subsystems = new List<UnityEngine.XR.XRInputSubsystem>();
+        SubsystemManager.GetInstances<UnityEngine.XR.XRInputSubsystem>(subsystems);
+        foreach (var s in subsystems)
+        {
+            if (s.TrySetTrackingOriginMode(UnityEngine.XR.TrackingOriginModeFlags.Floor))
+            {
+                Debug.Log($"[SessionController] Successfully set tracking origin to Floor.");
+            }
+        }
     }
 
     void Start()
     {
         StartCoroutine(SetupExperiment());
     }
+    
 
     private IEnumerator SetupExperiment()
     {
@@ -755,8 +774,8 @@ public class SessionController : MonoBehaviour
     {
         Debug.Log($"[SessionController] Waiting for {key} or Quest 'A' button...");
         
-        // Initial safety buffer to prevent accidental pass-through
-        yield return new WaitForSeconds(0.4f);
+        // Safety buffer to prevent accidental pass-through from previous frame
+        yield return new WaitForSeconds(0.5f);
 
         bool progressionTriggered = false;
 

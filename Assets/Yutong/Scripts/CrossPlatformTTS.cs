@@ -6,6 +6,9 @@ using UDebug = UnityEngine.Debug;
 using Proc = System.Diagnostics.Process;
 using PSI = System.Diagnostics.ProcessStartInfo;
 using System.Collections.Generic;
+using System.Security.Cryptography;
+using System.Text;
+using UnityEngine.Networking;
 
 [RequireComponent(typeof(AudioSource))]
 public class CrossPlatformTTS : MonoBehaviour
@@ -28,6 +31,18 @@ public class CrossPlatformTTS : MonoBehaviour
 
     static readonly Dictionary<string, AudioClip> _cache = new();
     string Key(string text) => $"{modelFileName}|{lengthScale}|{noiseScale}|{text}";
+
+    public string GetBakedFilename(string text)
+    {
+        using (MD5 md5 = MD5.Create())
+        {
+            byte[] inputBytes = Encoding.UTF8.GetBytes(Key(text));
+            byte[] hashBytes = md5.ComputeHash(inputBytes);
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < hashBytes.Length; i++) sb.Append(hashBytes[i].ToString("x2"));
+            return sb.ToString() + ".wav";
+        }
+    }
 
     void Awake()
     {
@@ -78,11 +93,55 @@ public class CrossPlatformTTS : MonoBehaviour
 
     IEnumerator SpeakCo(string text, Action done, bool prepareOnly = false)
     {
+        // 1. Check for Pre-Baked file in StreamingAssets (Crucial for Android/Quest)
+        string bakedFilename = GetBakedFilename(text);
+        string bakedPath = Path.Combine(Application.streamingAssetsPath, "AudioCache", bakedFilename);
+        
+        bool isAndroid = Application.platform == RuntimePlatform.Android;
+        bool exists = false;
+        
+        // On Android, we can't use File.Exists for StreamingAssets
+        if (isAndroid) exists = true; // We'll try to load it and fail gracefully
+        else exists = File.Exists(bakedPath);
+
+        if (exists)
+        {
+            // Use same path logic as resolve (Android uses URL)
+            string url = bakedPath;
+            if (isAndroid || bakedPath.Contains("://")) url = bakedPath;
+            else url = "file://" + bakedPath;
+
+            using (UnityWebRequest req = UnityWebRequestMultimedia.GetAudioClip(url, AudioType.WAV))
+            {
+                yield return req.SendWebRequest();
+                if (req.result == UnityWebRequest.Result.Success)
+                {
+                    AudioClip clip = DownloadHandlerAudioClip.GetContent(req);
+                    _cache[Key(text)] = clip;
+                    if (!prepareOnly)
+                    {
+                        _src.clip = clip;
+                        IsSpeaking = true;
+                        _src.Play();
+                        yield return new WaitWhile(() => _src.isPlaying);
+                        IsSpeaking = false;
+                    }
+                    done?.Invoke();
+                    yield break;
+                }
+                else if (!isAndroid)
+                {
+                    UDebug.LogWarning($"Baked file found but failed to load: {req.error}. Falling back to CLI.");
+                }
+            }
+        }
+
+        // 2. Fallback to CLI (Only works on Desktop)
         string exe = ResolvePiperExe();
-        if (exe == null) { UDebug.LogError("Piper executable not found."); done?.Invoke(); yield break; }
+        if (exe == null) { UDebug.LogError("Piper executable not found and no baked file found."); done?.Invoke(); yield break; }
 
         string model = ResolveModelPath();
-        if (model == null) { UDebug.LogError("Piper model not found (check modelFileName)."); done?.Invoke(); yield break; }
+        if (model == null) { UDebug.LogError("Piper model not found."); done?.Invoke(); yield break; }
 
         string wavPath = Path.Combine(Application.temporaryCachePath, "tts_piper_" + Guid.NewGuid().ToString("N") + ".wav");
 
@@ -183,5 +242,32 @@ public class CrossPlatformTTS : MonoBehaviour
         // allow omitting extension in inspector
         onnx = Path.Combine(dir, modelFileName + ".onnx");
         return File.Exists(onnx) ? onnx : null;
+    }
+
+    // --- Editor Baking Support ---
+    public void BakeToFile(string text, string targetPath)
+    {
+        string exe = ResolvePiperExe();
+        string model = ResolveModelPath();
+        if (exe == null || model == null) return;
+
+        string args = $"--model \"{model}\" --output_file \"{targetPath}\" --length_scale {lengthScale:0.###} --noise_scale {noiseScale:0.###}";
+        if (!string.IsNullOrWhiteSpace(extraArgs)) args = extraArgs + " " + args;
+
+        var psi = new PSI
+        {
+            FileName = exe,
+            Arguments = args,
+            UseShellExecute = false,
+            RedirectStandardInput = true,
+            CreateNoWindow = true
+        };
+
+        using (var p = Proc.Start(psi))
+        {
+            p.StandardInput.Write(text);
+            p.StandardInput.Close();
+            p.WaitForExit();
+        }
     }
 }
