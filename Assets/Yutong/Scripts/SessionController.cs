@@ -315,7 +315,7 @@ public class SessionController : MonoBehaviour
                 
                 if (origin != null)
                 {
-                    SpawnAgent(id, prefab, origin.position, origin.rotation);
+                    SpawnAgent(id, prefab, origin.position, origin.rotation, origin);
                 }
                 else
                 {
@@ -326,9 +326,9 @@ public class SessionController : MonoBehaviour
         }
     }
 
-    private void SpawnAgent(string id, GameObject prefab, Vector3 pos, Quaternion rot)
+    private void SpawnAgent(string id, GameObject prefab, Vector3 pos, Quaternion rot, Transform parent = null)
     {
-        var go = Instantiate(prefab, pos, rot); 
+        var go = Instantiate(prefab, pos, rot, parent); 
         go.name = id;
         var agt = go.GetComponent<ConversationalAgent>();
         if (!agt) agt = go.AddComponent<ConversationalAgent>();
