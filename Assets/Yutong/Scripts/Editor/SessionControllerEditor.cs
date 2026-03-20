@@ -24,6 +24,7 @@ public class SessionControllerEditor : Editor
     private SerializedProperty turnTakingText;
     private SerializedProperty dissonantOpinionsText;
     private SerializedProperty interacter;
+    private SerializedProperty isTestMode;
 
     private void OnEnable()
     {
@@ -46,6 +47,7 @@ public class SessionControllerEditor : Editor
         turnTakingText = serializedObject.FindProperty("turnTakingText");
         dissonantOpinionsText = serializedObject.FindProperty("dissonantOpinionsText");
         interacter = serializedObject.FindProperty("interacter");
+        isTestMode = serializedObject.FindProperty("isTestMode");
     }
 
     public override void OnInspectorGUI()
@@ -61,6 +63,10 @@ public class SessionControllerEditor : Editor
         EditorGUILayout.PropertyField(availableMaleAvatars, true);
         EditorGUILayout.PropertyField(availableFemaleAvatars, true);
         EditorGUILayout.PropertyField(manager);
+
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("General Settings", EditorStyles.boldLabel);
+        EditorGUILayout.PropertyField(isTestMode);
 
         EditorGUILayout.Space();
         

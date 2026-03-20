@@ -36,6 +36,8 @@ public class SessionController : MonoBehaviour
     [Header("Settings")]
     public float moveDuration = 2f;
     public float lineUpSpacing = 1.2f;
+    [Tooltip("Enable to skip lengthy movement and discussion phases")]
+    public bool isTestMode = false;
     
     [Header("ARR Settings")]
     public Transform[] agentOrigins = new Transform[4];
@@ -380,7 +382,8 @@ public class SessionController : MonoBehaviour
             nextColInRow[row]++; 
 
             Vector3 target = gridGenerator ? gridGenerator.GridToWorld(row, col) : agent.transform.position;
-            yield return MoveAgent(agent.transform, target, moveDuration);
+            float duration = isTestMode ? 0f : moveDuration;
+            yield return MoveAgent(agent.transform, target, duration);
         }
     }
     
@@ -499,8 +502,24 @@ public class SessionController : MonoBehaviour
 
         manager.Play();
 
+        float startTime = Time.time;
         while (manager.IsPlaying) 
         {
+            // Only allow skip after a 0.5s grace period to avoid catching the initial Space press
+            if (isTestMode && Time.time - startTime > 0.5f && Input.GetKeyDown(KeyCode.Space))
+            {
+                manager.Stop();
+                foreach (var agent in _currentAgents)
+                {
+                    var tts = agent.GetComponent<CrossPlatformTTS>();
+                    if (tts) tts.Stop();
+                    
+                    // Manually force animation state to false since tts.Stop() might kill the callback
+                    agent.SendMessage("SetTalkingState", false, SendMessageOptions.DontRequireReceiver);
+                }
+                Debug.Log("SessionController: Test Mode - Discussion Skipped.");
+                break;
+            }
             yield return null;
         }
         
@@ -617,7 +636,7 @@ public class SessionController : MonoBehaviour
         string formatted = "";
         for (int i = 0; i < parts.Length; i++)
         {
-            formatted += "■ " + parts[i].Trim() + (i < parts.Length - 1 ? "\n" : "");
+            formatted += "- " + parts[i].Trim() + (i < parts.Length - 1 ? "\n" : "");
         }
         return formatted;
     }

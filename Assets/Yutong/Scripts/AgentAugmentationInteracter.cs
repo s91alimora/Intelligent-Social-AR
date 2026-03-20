@@ -237,7 +237,7 @@ public class AgentAugmentationInteracter : MonoBehaviour
         string formatted = "";
         for (int i = 0; i < parts.Length; i++)
         {
-            formatted += "■ " + parts[i].Trim() + (i < parts.Length - 1 ? "\n" : "");
+            formatted += "- " + parts[i].Trim() + (i < parts.Length - 1 ? "\n" : "");
         }
         return formatted;
     }
