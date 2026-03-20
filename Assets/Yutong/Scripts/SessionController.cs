@@ -56,6 +56,7 @@ public class SessionController : MonoBehaviour
     public AgentAugmentationInteracter interacter;
 
     // Internal State
+    public bool isExperimentFinished { get; private set; } = false;
     private Dictionary<string, GameObject> _agentMapping = new(); // "agent_1" -> Prefab
     private List<ConversationalAgent> _currentAgents = new(); // Spawned instances
     private List<(TextAsset script, int questionIndex)> _trialSequence = new();
@@ -121,7 +122,6 @@ public class SessionController : MonoBehaviour
         }
 
         // 2. Generate Trial Sequence (4 Trials)
-        // Each script used once. Random question (1-4) from each script.
         _trialSequence.Clear();
         if (scriptFiles.Count < 4)
         {
@@ -129,11 +129,27 @@ public class SessionController : MonoBehaviour
             yield break;
         }
 
-        var shuffledScripts = scriptFiles.OrderBy(x => UnityEngine.Random.value).Take(4).ToList();
-        foreach (var script in shuffledScripts)
+        if (MasterLevelController.Instance != null)
         {
-            int qIndex = UnityEngine.Random.Range(1, 4 + 1); // 1 to 4
-            _trialSequence.Add((script, qIndex));
+            // Global study flow ensures perfect non-repeating cross-condition assignments
+            var masterTrials = MasterLevelController.Instance.GetTrialsForCurrentCondition();
+            foreach (var t in masterTrials)
+            {
+                if (t.scriptIndex >= 0 && t.scriptIndex < scriptFiles.Count)
+                {
+                    _trialSequence.Add((scriptFiles[t.scriptIndex], t.questionIndex));
+                }
+            }
+        }
+        else
+        {
+            // Fallback for standalone scene testing (random picking)
+            var shuffledScripts = scriptFiles.OrderBy(x => UnityEngine.Random.value).Take(4).ToList();
+            foreach (var script in shuffledScripts)
+            {
+                int qIndex = UnityEngine.Random.Range(1, 4 + 1); // 1 to 4
+                _trialSequence.Add((script, qIndex));
+            }
         }
 
         _currentTrialIndex = 0;
@@ -147,6 +163,7 @@ public class SessionController : MonoBehaviour
         if (trialIndex >= _trialSequence.Count)
         {
             Debug.Log("Experiment Finished");
+            isExperimentFinished = true;
             yield break;
         }
 
