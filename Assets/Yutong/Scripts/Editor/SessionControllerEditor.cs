@@ -17,7 +17,7 @@ public class SessionControllerEditor : Editor
     private SerializedProperty wallQuestionText;
     private SerializedProperty augmentationPanel;
     private SerializedProperty suggestionsText;
-    private SerializedProperty themesText;
+    private SerializedProperty themesTexts;
     private SerializedProperty speakingSumImage;
     private SerializedProperty grpMoveImage;
     private SerializedProperty grpSimMatImage;
@@ -40,7 +40,7 @@ public class SessionControllerEditor : Editor
         wallQuestionText = serializedObject.FindProperty("wallQuestionText");
         augmentationPanel = serializedObject.FindProperty("augmentationPanel");
         suggestionsText = serializedObject.FindProperty("suggestionsText");
-        themesText = serializedObject.FindProperty("themesText");
+        themesTexts = serializedObject.FindProperty("themesTexts");
         speakingSumImage = serializedObject.FindProperty("speakingSumImage");
         grpMoveImage = serializedObject.FindProperty("grpMoveImage");
         grpSimMatImage = serializedObject.FindProperty("grpSimMatImage");
@@ -90,7 +90,7 @@ public class SessionControllerEditor : Editor
         EditorGUILayout.PropertyField(wallQuestionText);
         EditorGUILayout.PropertyField(augmentationPanel);
         EditorGUILayout.PropertyField(suggestionsText);
-        EditorGUILayout.PropertyField(themesText);
+        EditorGUILayout.PropertyField(themesTexts, true);
         
         if (condition == SessionController.StudyCondition.iAA)
         {

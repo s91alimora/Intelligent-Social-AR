@@ -47,7 +47,7 @@ public class SessionController : MonoBehaviour
     public TextMeshProUGUI wallQuestionText;
     public GameObject augmentationPanel;
     public TextMeshProUGUI suggestionsText;
-    public TextMeshProUGUI themesText;
+    public List<TextMeshProUGUI> themesTexts;
     public Image speakingSumImage;
     public Image grpMoveImage;
     public Image grpSimMatImage;
@@ -551,8 +551,34 @@ public class SessionController : MonoBehaviour
 
             // Themes
             string themes = ExtractJsonString(fullJson, "glb_Emg_Themes", grpSumsIdx);
-            if (themesText != null) 
-                themesText.text = FormatBulletinPoints(themes);
+            if (themesTexts != null && themesTexts.Count > 0) 
+            {
+                // Split by ■ to get individual points
+                string[] points = themes.Split(new char[] { '■' }, StringSplitOptions.RemoveEmptyEntries);
+                
+                // Clear all first
+                foreach (var tmp in themesTexts) if (tmp != null) tmp.text = "";
+
+                // Distribute: 1-2 in first TMP, 3-4 in second TMP
+                string firstHalf = "";
+                string secondHalf = "";
+
+                for (int i = 0; i < points.Length; i++)
+                {
+                    string formattedPoint = "■ " + points[i].Trim();
+                    if (i < 2)
+                    {
+                        firstHalf += formattedPoint + (i == 0 && points.Length > 1 ? "\n" : "");
+                    }
+                    else if (i < 4)
+                    {
+                        secondHalf += formattedPoint + (i == 2 && points.Length > 3 ? "\n" : "");
+                    }
+                }
+
+                if (themesTexts.Count > 0 && themesTexts[0] != null) themesTexts[0].text = firstHalf;
+                if (themesTexts.Count > 1 && themesTexts[1] != null) themesTexts[1].text = secondHalf;
+            }
         }
 
         // 2. Extract Image or Stat Augmentations based on condition
@@ -636,7 +662,7 @@ public class SessionController : MonoBehaviour
         string formatted = "";
         for (int i = 0; i < parts.Length; i++)
         {
-            formatted += "- " + parts[i].Trim() + (i < parts.Length - 1 ? "\n" : "");
+            formatted += "■ " + parts[i].Trim() + (i < parts.Length - 1 ? "\n" : "");
         }
         return formatted;
     }
