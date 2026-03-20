@@ -18,7 +18,7 @@ public class SessionController : MonoBehaviour
     public enum SessionPhase { Setup, GridMove, Discussion, AR_UI }
     public SessionPhase CurrentPhase { get; private set; }
 
-    public enum StudyCondition { iAA, ARR }
+    public enum StudyCondition { iAA, iAT, nAA, nAT }
     
     [Header("Study State")]
     public StudyCondition studyCondition = StudyCondition.iAA;
@@ -39,7 +39,7 @@ public class SessionController : MonoBehaviour
     [Tooltip("Enable to skip lengthy movement and discussion phases")]
     public bool isTestMode = false;
     
-    [Header("ARR Settings")]
+    [Header("iAT Settings")]
     public Transform[] agentOrigins = new Transform[4];
 
     [Header("Augmentation UI")]
@@ -154,13 +154,13 @@ public class SessionController : MonoBehaviour
         var trial = _trialSequence[trialIndex];
         _currentQuestionData = ParseQuestionData(trial.script, trial.questionIndex);
 
-        if (studyCondition == StudyCondition.iAA)
+        if (studyCondition == StudyCondition.iAA || studyCondition == StudyCondition.nAA)
         {
             yield return StartTrial_iAA(trialIndex);
         }
-        else if (studyCondition == StudyCondition.ARR)
+        else if (studyCondition == StudyCondition.iAT || studyCondition == StudyCondition.nAT)
         {
-            yield return StartTrial_ARR(trialIndex);
+            yield return StartTrial_iAT(trialIndex);
         }
     }
 
@@ -201,7 +201,7 @@ public class SessionController : MonoBehaviour
         FinishTrial();
     }
 
-    private IEnumerator StartTrial_ARR(int trialIndex)
+    private IEnumerator StartTrial_iAT(int trialIndex)
     {
         var trial = _trialSequence[trialIndex];
         
@@ -233,6 +233,13 @@ public class SessionController : MonoBehaviour
 
     private IEnumerator Phase_AR_UI((TextAsset script, int questionIndex) trial)
     {
+        if (studyCondition == StudyCondition.nAA || studyCondition == StudyCondition.nAT)
+        {
+            Debug.Log($"SessionController: {studyCondition} Mode - No AR UI.");
+            yield return new WaitForSeconds(0.5f);
+            yield break;
+        }
+
         Debug.Log("SessionController: AR UI Enabled. Interact with agents.");
         
         // Show Augmentations
@@ -269,7 +276,7 @@ public class SessionController : MonoBehaviour
         _currentAgents.Clear();
 
         // iAA specific setup
-        if (studyCondition == StudyCondition.iAA)
+        if (studyCondition == StudyCondition.iAA || studyCondition == StudyCondition.nAA)
         {
             // Build Grid (Static 5x4)
             if (gridGenerator)
@@ -294,7 +301,7 @@ public class SessionController : MonoBehaviour
         // Spawn Avatars
         Debug.Log($"SessionController: Phase 1 Setup ({studyCondition}). Spawning avatars.");
         
-        if (studyCondition == StudyCondition.iAA)
+        if (studyCondition == StudyCondition.iAA || studyCondition == StudyCondition.nAA)
         {
             // "Line up on the side". Let's say left of grid.
             Vector3 startPos = gridGenerator ? gridGenerator.GridToWorld(0, 4) : Vector3.zero; // 2 columns left
@@ -306,7 +313,7 @@ public class SessionController : MonoBehaviour
                 SpawnAgent(id, prefab, pos, Quaternion.LookRotation(Vector3.left));
             }
         }
-        else if (studyCondition == StudyCondition.ARR)
+        else if (studyCondition == StudyCondition.iAT || studyCondition == StudyCondition.nAT)
         {
             // Spawn at origins
             for (int i = 1; i <= 4; i++)
@@ -565,7 +572,7 @@ public class SessionController : MonoBehaviour
 
                 for (int i = 0; i < points.Length; i++)
                 {
-                    string formattedPoint = "■ " + points[i].Trim();
+                    string formattedPoint = "■ <indent=1.2em>" + points[i].Trim() + "</indent>";
                     if (i < 2)
                     {
                         firstHalf += formattedPoint + (i == 0 && points.Length > 1 ? "\n" : "");
@@ -603,7 +610,7 @@ public class SessionController : MonoBehaviour
                 if (grpSimMatImage != null) StartCoroutine(LoadImageToUI(simMatPath, grpSimMatImage));
             }
         }
-        else if (studyCondition == StudyCondition.ARR)
+        else if (studyCondition == StudyCondition.iAT)
         {
             // Toggle visibility
             if (speakingSumImage != null) speakingSumImage.gameObject.SetActive(false);
@@ -662,7 +669,7 @@ public class SessionController : MonoBehaviour
         string formatted = "";
         for (int i = 0; i < parts.Length; i++)
         {
-            formatted += "■ " + parts[i].Trim() + (i < parts.Length - 1 ? "\n" : "");
+            formatted += "■ <indent=1.2em>" + parts[i].Trim() + "</indent>" + (i < parts.Length - 1 ? "\n" : "");
         }
         return formatted;
     }

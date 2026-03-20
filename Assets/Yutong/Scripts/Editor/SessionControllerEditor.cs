@@ -72,39 +72,45 @@ public class SessionControllerEditor : Editor
         
         SessionController.StudyCondition condition = (SessionController.StudyCondition)studyCondition.enumValueIndex;
 
-        if (condition == SessionController.StudyCondition.iAA)
+        if (condition == SessionController.StudyCondition.iAA || condition == SessionController.StudyCondition.nAA)
         {
-            EditorGUILayout.LabelField("iAA (Grid) Settings", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("iAA/nAA (Grid) Settings", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(gridGenerator);
             EditorGUILayout.PropertyField(moveDuration);
             EditorGUILayout.PropertyField(lineUpSpacing);
         }
-        else if (condition == SessionController.StudyCondition.ARR)
+        else if (condition == SessionController.StudyCondition.iAT || condition == SessionController.StudyCondition.nAT)
         {
-            EditorGUILayout.LabelField("ARR (Table/Origins) Settings", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("iAT/nAT (Table/Origins) Settings", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(agentOrigins, true);
         }
 
         EditorGUILayout.Space();
-        EditorGUILayout.LabelField("Augmentation UI", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("Environment UI", EditorStyles.boldLabel);
         EditorGUILayout.PropertyField(wallQuestionText);
-        EditorGUILayout.PropertyField(augmentationPanel);
-        EditorGUILayout.PropertyField(suggestionsText);
-        EditorGUILayout.PropertyField(themesTexts, true);
-        
-        if (condition == SessionController.StudyCondition.iAA)
-        {
-            EditorGUILayout.PropertyField(speakingSumImage);
-            EditorGUILayout.PropertyField(grpMoveImage);
-            EditorGUILayout.PropertyField(grpSimMatImage);
-        }
-        else if (condition == SessionController.StudyCondition.ARR)
-        {
-            EditorGUILayout.PropertyField(turnTakingText);
-            EditorGUILayout.PropertyField(dissonantOpinionsText);
-        }
 
-        EditorGUILayout.PropertyField(interacter);
+        if (condition != SessionController.StudyCondition.nAA && condition != SessionController.StudyCondition.nAT)
+        {
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Augmentation UI", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(augmentationPanel);
+            EditorGUILayout.PropertyField(suggestionsText);
+            EditorGUILayout.PropertyField(themesTexts, true);
+            
+            if (condition == SessionController.StudyCondition.iAA)
+            {
+                EditorGUILayout.PropertyField(speakingSumImage);
+                EditorGUILayout.PropertyField(grpMoveImage);
+                EditorGUILayout.PropertyField(grpSimMatImage);
+            }
+            else if (condition == SessionController.StudyCondition.iAT)
+            {
+                EditorGUILayout.PropertyField(turnTakingText);
+                EditorGUILayout.PropertyField(dissonantOpinionsText);
+            }
+
+            EditorGUILayout.PropertyField(interacter);
+        }
 
         serializedObject.ApplyModifiedProperties();
     }
