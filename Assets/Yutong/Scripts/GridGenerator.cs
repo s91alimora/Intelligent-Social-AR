@@ -84,17 +84,17 @@ public class GridGenerator : MonoBehaviour
             if (labelAlignment == LabelAlignment.Right)
             {
                 if (i >= _rows) break;
-                pos = GridToWorld(i, _cols - 1) + new Vector3(cellWidth * 1.0f, labelY, 0f);
+                pos = GridToWorld(i, _cols - 1) + new Vector3(cellWidth * 0.5f, labelY, 0f);
             }
             else if (labelAlignment == LabelAlignment.Left)
             {
                 if (i >= _rows) break;
-                pos = GridToWorld(i, 0) + new Vector3(-cellWidth * 1.0f, labelY, 0f);
+                pos = GridToWorld(i, 0) + new Vector3(-cellWidth * 0.5f, labelY, 0f);
             }
             else
             {
                 if (i >= _cols) break;
-                pos = GridToWorld(-1, i) + new Vector3(0f, labelY, 0f); 
+                pos = GridToWorld(-0.5f, i) + new Vector3(0f, labelY, 0f); 
             }
 
             // Instantiate from prefab
@@ -126,12 +126,10 @@ public class GridGenerator : MonoBehaviour
         }
     }
 
-    public Vector3 GridToWorld(int row, int col)
+    public Vector3 GridToWorld(float row, float col)
     {
-        // Allow -1 row (used for staging/labels)
-        float r = row + 0.0f;
-        float c = col + 0.0f;
-        return origin + new Vector3(c * cellWidth, 0f, r * cellDepth);
+        // Allow fractional rows/cols (used for staging/labels)
+        return origin + new Vector3(col * cellWidth, 0f, row * cellDepth);
     }
 
     void AddLine(Vector3 a, Vector3 b)

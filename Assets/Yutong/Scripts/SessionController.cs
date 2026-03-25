@@ -19,9 +19,19 @@ public class SessionController : MonoBehaviour
     public SessionPhase CurrentPhase { get; private set; }
 
     public enum StudyCondition { iAA, iAT, nAA, nAT }
+    public enum QuestionSelectionMode { Random, Manual }
+    
+    [Serializable]
+    public struct ManualTrialSelection
+    {
+        public int scriptIndex; // index in scriptFiles
+        public int questionIndex; // 1-based (1-4)
+    }
     
     [Header("Study State")]
     public StudyCondition studyCondition = StudyCondition.iAA;
+    public QuestionSelectionMode selectionMode = QuestionSelectionMode.Random;
+    public List<ManualTrialSelection> manualTrials = new();
 
     [Header("Configuration")]
     public List<TextAsset> scriptFiles; // Assign Script_1 to Script_4
@@ -129,7 +139,17 @@ public class SessionController : MonoBehaviour
             yield break;
         }
 
-        if (MasterLevelController.Instance != null)
+        if (selectionMode == QuestionSelectionMode.Manual)
+        {
+            foreach (var mt in manualTrials)
+            {
+                if (mt.scriptIndex >= 0 && mt.scriptIndex < scriptFiles.Count)
+                {
+                    _trialSequence.Add((scriptFiles[mt.scriptIndex], mt.questionIndex));
+                }
+            }
+        }
+        else if (MasterLevelController.Instance != null)
         {
             // Global study flow ensures perfect non-repeating cross-condition assignments
             var masterTrials = MasterLevelController.Instance.GetTrialsForCurrentCondition();
