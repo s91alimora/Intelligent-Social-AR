@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
-
 [DisallowMultipleComponent]
 public class GridGenerator : MonoBehaviour
 {
@@ -30,15 +29,14 @@ public class GridGenerator : MonoBehaviour
     public GameObject labelPrefab;
     public Camera mainCamera;
 
-
-
     public enum LabelAlignment { Bottom, Right, Left }
     public LabelAlignment labelAlignment = LabelAlignment.Bottom;
 
+    public int rows => _rows;
+    public int cols => _cols;
     int _rows, _cols;
     readonly List<LineRenderer> _lines = new();
     readonly List<GameObject> _labels = new();
-
 
     public void Build(int rows, int cols)
     {
@@ -115,15 +113,25 @@ public class GridGenerator : MonoBehaviour
             {
                 tmp.text = txt;
             }
-            else
-            {
-                // Fallback to legacy if TMP_Text not found (though unlikely given requirements)
-                TextMesh tm = go.GetComponentInChildren<TextMesh>();
-                if (tm != null) tm.text = txt;
-            }
-
-            _labels.Add(go);
         }
+    }
+
+    public void Clear()
+    {
+        ClearLines();
+        ClearLabels();
+    }
+
+    void ClearLines()
+    {
+        foreach (var l in _lines) if (l) Destroy(l.gameObject);
+        _lines.Clear();
+    }
+
+    void ClearLabels()
+    {
+        foreach (var l in _labels) if (l) Destroy(l);
+        _labels.Clear();
     }
 
     public Vector3 GridToWorld(float row, float col)
@@ -134,28 +142,16 @@ public class GridGenerator : MonoBehaviour
 
     void AddLine(Vector3 a, Vector3 b)
     {
-        var go = new GameObject("grid-line");
-        go.transform.SetParent(transform, false);
-        var lr = go.AddComponent<LineRenderer>();
-        lr.useWorldSpace = true;
-        lr.positionCount = 2;
-        lr.SetPositions(new[] { a, b });
-        lr.startWidth = lr.endWidth = lineWidth;
+        GameObject go = new GameObject("grid-line");
+        go.transform.SetParent(transform);
+        LineRenderer lr = go.AddComponent<LineRenderer>();
         lr.material = new Material(Shader.Find("Sprites/Default"));
         lr.startColor = lr.endColor = lineColor;
+        lr.startWidth = lr.endWidth = lineWidth;
+        lr.positionCount = 2;
+        lr.SetPosition(0, a);
+        lr.SetPosition(1, b);
+        lr.useWorldSpace = true;
         _lines.Add(lr);
     }
-
-    void ClearLines()
-    {
-        foreach (var lr in _lines) if (lr) Destroy(lr.gameObject);
-        _lines.Clear();
-    }
-
-    void ClearLabels()
-    {
-        foreach (var go in _labels) if (go) Destroy(go);
-        _labels.Clear();
-    }
-
 }
