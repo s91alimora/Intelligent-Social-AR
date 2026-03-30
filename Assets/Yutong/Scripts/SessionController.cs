@@ -29,6 +29,8 @@ public class SessionController : MonoBehaviour
     }
     
     [Header("Study State")]
+    public string participantID = "P1";
+    public GazeDataRecorder gazeRecorder;
     public StudyCondition studyCondition = StudyCondition.iAA;
     public QuestionSelectionMode selectionMode = QuestionSelectionMode.Random;
     public List<ManualTrialSelection> manualTrials = new();
@@ -103,6 +105,29 @@ public class SessionController : MonoBehaviour
     void Start()
     {
         StartCoroutine(SetupExperiment());
+    }
+
+    private void SaveGazeData()
+    {
+        if (gazeRecorder != null)
+        {
+            string seqName = "";
+            if (MasterLevelController.Instance != null)
+            {
+                seqName = MasterLevelController.Instance.GetCurrentSequenceName();
+            }
+            gazeRecorder.WriteDataToCSV(participantID, seqName);
+        }
+    }
+
+    void OnDestroy()
+    {
+        SaveGazeData();
+    }
+
+    void OnApplicationQuit()
+    {
+        SaveGazeData();
     }
     
 
@@ -184,6 +209,7 @@ public class SessionController : MonoBehaviour
         {
             Debug.Log("Experiment Finished");
             isExperimentFinished = true;
+            SaveGazeData();
             yield break;
         }
 
@@ -221,14 +247,18 @@ public class SessionController : MonoBehaviour
 
         // Phase 3: Discussion
         CurrentPhase = SessionPhase.Discussion;
+        if (gazeRecorder != null) gazeRecorder.StartRecording(studyCondition.ToString(), trial.script.name, trial.questionIndex, "Conversation");
         yield return DiscussionPhase3();
+        if (studyCondition == StudyCondition.nAA) { if (gazeRecorder != null) gazeRecorder.StopRecording(); }
 
         // Wait for Space -> Phase 4
         yield return WaitForKey(KeyCode.Space);
 
         // Phase 4: AR UI
         CurrentPhase = SessionPhase.AR_UI;
+        if (studyCondition == StudyCondition.iAA) { if (gazeRecorder != null) gazeRecorder.StartRecording(studyCondition.ToString(), trial.script.name, trial.questionIndex, "Augmentation"); }
         yield return Phase_AR_UI(trial);
+        if (gazeRecorder != null) gazeRecorder.StopRecording();
 
         // Wait for Space -> Next Trial
         Debug.Log($"SessionController: Trial {trialIndex} complete. Press Space for next.");
@@ -251,14 +281,18 @@ public class SessionController : MonoBehaviour
 
         // Phase 2: Discussion
         CurrentPhase = SessionPhase.Discussion;
+        if (gazeRecorder != null) gazeRecorder.StartRecording(studyCondition.ToString(), trial.script.name, trial.questionIndex, "Conversation");
         yield return DiscussionPhase3();
+        if (studyCondition == StudyCondition.nAT) { if (gazeRecorder != null) gazeRecorder.StopRecording(); }
 
         // Wait for Space -> Phase 3 (AR UI)
         yield return WaitForKey(KeyCode.Space);
 
         // Phase 3: AR UI
         CurrentPhase = SessionPhase.AR_UI;
+        if (studyCondition == StudyCondition.iAT) { if (gazeRecorder != null) gazeRecorder.StartRecording(studyCondition.ToString(), trial.script.name, trial.questionIndex, "Augmentation"); }
         yield return Phase_AR_UI(trial);
+        if (gazeRecorder != null) gazeRecorder.StopRecording();
 
         // Wait for Space -> Next Trial
         Debug.Log($"SessionController: Trial {trialIndex} complete. Press Space for next.");

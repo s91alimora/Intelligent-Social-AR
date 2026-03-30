@@ -121,6 +121,11 @@ public class MasterLevelController : MonoBehaviour
         return new List<(int, int)>();
     }
 
+    public string GetCurrentSequenceName()
+    {
+        return studySequence.ToString();
+    }
+
     private void LoadConditionScene(int index)
     {
         SessionController.StudyCondition targetCondition = GetConditionForIndex(index);

@@ -5,6 +5,8 @@ using System.Collections.Generic;
 [CustomEditor(typeof(SessionController))]
 public class SessionControllerEditor : Editor
 {
+    private SerializedProperty participantID;
+    private SerializedProperty gazeRecorder;
     private SerializedProperty studyCondition;
     private SerializedProperty scriptFiles;
     private SerializedProperty availableMaleAvatars;
@@ -30,6 +32,8 @@ public class SessionControllerEditor : Editor
 
     private void OnEnable()
     {
+        participantID = serializedObject.FindProperty("participantID");
+        gazeRecorder = serializedObject.FindProperty("gazeRecorder");
         studyCondition = serializedObject.FindProperty("studyCondition");
         scriptFiles = serializedObject.FindProperty("scriptFiles");
         availableMaleAvatars = serializedObject.FindProperty("availableMaleAvatars");
@@ -59,6 +63,8 @@ public class SessionControllerEditor : Editor
         serializedObject.Update();
 
         EditorGUILayout.LabelField("Study Setup", EditorStyles.boldLabel);
+        EditorGUILayout.PropertyField(participantID);
+        EditorGUILayout.PropertyField(gazeRecorder);
         EditorGUILayout.PropertyField(studyCondition);
         EditorGUILayout.PropertyField(selectionMode);
 
