@@ -114,7 +114,7 @@ public class AgentAugmentationInteracter : MonoBehaviour
         GameObject seatedFirstObj = FindGameObjectByName(root, "Times Seated First");
         GameObject seatingPatternObj = FindGameObjectByName(root, "Individual Seating Pattern");
 
-        // ARR Blocks
+        // iAT Blocks
         GameObject durationObj = FindGameObjectByName(root, "Duration of Speech");
         GameObject timesSpokenObj = FindGameObjectByName(root, "Times Spoken");
         GameObject wordsSpokenObj = FindGameObjectByName(root, "Words Spoken");
@@ -148,7 +148,7 @@ public class AgentAugmentationInteracter : MonoBehaviour
                 }
             }
         }
-        else if (condition == SessionController.StudyCondition.ARR)
+        else if (condition == SessionController.StudyCondition.iAT)
         {
             // Set Visiblity
             if (spokenFirstObj != null) spokenFirstObj.SetActive(false);
@@ -158,7 +158,7 @@ public class AgentAugmentationInteracter : MonoBehaviour
             if (timesSpokenObj != null) timesSpokenObj.SetActive(true);
             if (wordsSpokenObj != null) wordsSpokenObj.SetActive(true);
 
-            // Populate ARR Stats
+            // Populate iAT Stats
             string trdStatsKey = $"{agentName}_trd_Stats";
             int trdIdx = json.IndexOf($"\"{trdStatsKey}\"", startIdx);
             if (trdIdx != -1)
@@ -237,7 +237,7 @@ public class AgentAugmentationInteracter : MonoBehaviour
         string formatted = "";
         for (int i = 0; i < parts.Length; i++)
         {
-            formatted += "■ " + parts[i].Trim() + (i < parts.Length - 1 ? "\n" : "");
+            formatted += "■ <indent=1.2em>" + parts[i].Trim() + "</indent>" + (i < parts.Length - 1 ? "\n" : "");
         }
         return formatted;
     }
@@ -317,9 +317,13 @@ public class AgentAugmentationInteracter : MonoBehaviour
             }
         }
 
-        // 1. Handle Active Agent Jitter
+        // 1. Handle Active Agent (Billboarding & Jitter)
         if (activeAgent != null)
         {
+            // Continuous Billboarding: Rotate to face camera as user moves
+            Canvas canvas = GetAgentCanvas(activeAgent);
+            if (canvas != null) FaceCameraYOnly(canvas.transform.parent);
+
             if (hitAgent == activeAgent)
             {
                 jitterTimer = 0f; // Reset jitter buffer

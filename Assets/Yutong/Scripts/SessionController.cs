@@ -18,10 +18,22 @@ public class SessionController : MonoBehaviour
     public enum SessionPhase { Setup, GridMove, Discussion, AR_UI }
     public SessionPhase CurrentPhase { get; private set; }
 
-    public enum StudyCondition { iAA, ARR }
+    public enum StudyCondition { iAA, iAT, nAA, nAT }
+    public enum QuestionSelectionMode { Random, Manual }
+    
+    [Serializable]
+    public struct ManualTrialSelection
+    {
+        public int scriptIndex; // index in scriptFiles
+        public int questionIndex; // 1-based (1-4)
+    }
     
     [Header("Study State")]
+    public string participantID = "P1";
+    public GazeDataRecorder gazeRecorder;
     public StudyCondition studyCondition = StudyCondition.iAA;
+    public QuestionSelectionMode selectionMode = QuestionSelectionMode.Random;
+    public List<ManualTrialSelection> manualTrials = new();
 
     [Header("Configuration")]
     public List<TextAsset> scriptFiles; // Assign Script_1 to Script_4
@@ -36,8 +48,10 @@ public class SessionController : MonoBehaviour
     [Header("Settings")]
     public float moveDuration = 2f;
     public float lineUpSpacing = 1.2f;
+    [Tooltip("Enable to skip lengthy movement and discussion phases")]
+    public bool isTestMode = false;
     
-    [Header("ARR Settings")]
+    [Header("iAT Settings")]
     public Transform[] agentOrigins = new Transform[4];
 
     [Header("Augmentation UI")]
@@ -45,7 +59,7 @@ public class SessionController : MonoBehaviour
     public TextMeshProUGUI wallQuestionText;
     public GameObject augmentationPanel;
     public TextMeshProUGUI suggestionsText;
-    public TextMeshProUGUI themesText;
+    public List<TextMeshProUGUI> themesTexts;
     public Image speakingSumImage;
     public Image grpMoveImage;
     public Image grpSimMatImage;
@@ -54,6 +68,7 @@ public class SessionController : MonoBehaviour
     public AgentAugmentationInteracter interacter;
 
     // Internal State
+    public bool isExperimentFinished { get; private set; } = false;
     private Dictionary<string, GameObject> _agentMapping = new(); // "agent_1" -> Prefab
     private List<ConversationalAgent> _currentAgents = new(); // Spawned instances
     private List<(TextAsset script, int questionIndex)> _trialSequence = new();
@@ -91,6 +106,29 @@ public class SessionController : MonoBehaviour
     {
         StartCoroutine(SetupExperiment());
     }
+
+    private void SaveGazeData()
+    {
+        if (gazeRecorder != null)
+        {
+            string seqName = "";
+            if (MasterLevelController.Instance != null)
+            {
+                seqName = MasterLevelController.Instance.GetCurrentSequenceName();
+            }
+            gazeRecorder.WriteDataToCSV(participantID, seqName);
+        }
+    }
+
+    void OnDestroy()
+    {
+        SaveGazeData();
+    }
+
+    void OnApplicationQuit()
+    {
+        SaveGazeData();
+    }
     
 
     private IEnumerator SetupExperiment()
@@ -119,7 +157,6 @@ public class SessionController : MonoBehaviour
         }
 
         // 2. Generate Trial Sequence (4 Trials)
-        // Each script used once. Random question (1-4) from each script.
         _trialSequence.Clear();
         if (scriptFiles.Count < 4)
         {
@@ -127,11 +164,37 @@ public class SessionController : MonoBehaviour
             yield break;
         }
 
-        var shuffledScripts = scriptFiles.OrderBy(x => UnityEngine.Random.value).Take(4).ToList();
-        foreach (var script in shuffledScripts)
+        if (selectionMode == QuestionSelectionMode.Manual)
         {
-            int qIndex = UnityEngine.Random.Range(1, 4 + 1); // 1 to 4
-            _trialSequence.Add((script, qIndex));
+            foreach (var mt in manualTrials)
+            {
+                if (mt.scriptIndex >= 0 && mt.scriptIndex < scriptFiles.Count)
+                {
+                    _trialSequence.Add((scriptFiles[mt.scriptIndex], mt.questionIndex));
+                }
+            }
+        }
+        else if (MasterLevelController.Instance != null)
+        {
+            // Global study flow ensures perfect non-repeating cross-condition assignments
+            var masterTrials = MasterLevelController.Instance.GetTrialsForCurrentCondition();
+            foreach (var t in masterTrials)
+            {
+                if (t.scriptIndex >= 0 && t.scriptIndex < scriptFiles.Count)
+                {
+                    _trialSequence.Add((scriptFiles[t.scriptIndex], t.questionIndex));
+                }
+            }
+        }
+        else
+        {
+            // Fallback for standalone scene testing (random picking)
+            var shuffledScripts = scriptFiles.OrderBy(x => UnityEngine.Random.value).Take(4).ToList();
+            foreach (var script in shuffledScripts)
+            {
+                int qIndex = UnityEngine.Random.Range(1, 4 + 1); // 1 to 4
+                _trialSequence.Add((script, qIndex));
+            }
         }
 
         _currentTrialIndex = 0;
@@ -145,6 +208,8 @@ public class SessionController : MonoBehaviour
         if (trialIndex >= _trialSequence.Count)
         {
             Debug.Log("Experiment Finished");
+            isExperimentFinished = true;
+            SaveGazeData();
             yield break;
         }
 
@@ -152,13 +217,13 @@ public class SessionController : MonoBehaviour
         var trial = _trialSequence[trialIndex];
         _currentQuestionData = ParseQuestionData(trial.script, trial.questionIndex);
 
-        if (studyCondition == StudyCondition.iAA)
+        if (studyCondition == StudyCondition.iAA || studyCondition == StudyCondition.nAA)
         {
             yield return StartTrial_iAA(trialIndex);
         }
-        else if (studyCondition == StudyCondition.ARR)
+        else if (studyCondition == StudyCondition.iAT || studyCondition == StudyCondition.nAT)
         {
-            yield return StartTrial_ARR(trialIndex);
+            yield return StartTrial_iAT(trialIndex);
         }
     }
 
@@ -182,14 +247,18 @@ public class SessionController : MonoBehaviour
 
         // Phase 3: Discussion
         CurrentPhase = SessionPhase.Discussion;
+        if (gazeRecorder != null) gazeRecorder.StartRecording(studyCondition.ToString(), trial.script.name, trial.questionIndex, "Conversation");
         yield return DiscussionPhase3();
+        if (studyCondition == StudyCondition.nAA) { if (gazeRecorder != null) gazeRecorder.StopRecording(); }
 
         // Wait for Space -> Phase 4
         yield return WaitForKey(KeyCode.Space);
 
         // Phase 4: AR UI
         CurrentPhase = SessionPhase.AR_UI;
+        if (studyCondition == StudyCondition.iAA) { if (gazeRecorder != null) gazeRecorder.StartRecording(studyCondition.ToString(), trial.script.name, trial.questionIndex, "Augmentation"); }
         yield return Phase_AR_UI(trial);
+        if (gazeRecorder != null) gazeRecorder.StopRecording();
 
         // Wait for Space -> Next Trial
         Debug.Log($"SessionController: Trial {trialIndex} complete. Press Space for next.");
@@ -199,7 +268,7 @@ public class SessionController : MonoBehaviour
         FinishTrial();
     }
 
-    private IEnumerator StartTrial_ARR(int trialIndex)
+    private IEnumerator StartTrial_iAT(int trialIndex)
     {
         var trial = _trialSequence[trialIndex];
         
@@ -212,14 +281,18 @@ public class SessionController : MonoBehaviour
 
         // Phase 2: Discussion
         CurrentPhase = SessionPhase.Discussion;
+        if (gazeRecorder != null) gazeRecorder.StartRecording(studyCondition.ToString(), trial.script.name, trial.questionIndex, "Conversation");
         yield return DiscussionPhase3();
+        if (studyCondition == StudyCondition.nAT) { if (gazeRecorder != null) gazeRecorder.StopRecording(); }
 
         // Wait for Space -> Phase 3 (AR UI)
         yield return WaitForKey(KeyCode.Space);
 
         // Phase 3: AR UI
         CurrentPhase = SessionPhase.AR_UI;
+        if (studyCondition == StudyCondition.iAT) { if (gazeRecorder != null) gazeRecorder.StartRecording(studyCondition.ToString(), trial.script.name, trial.questionIndex, "Augmentation"); }
         yield return Phase_AR_UI(trial);
+        if (gazeRecorder != null) gazeRecorder.StopRecording();
 
         // Wait for Space -> Next Trial
         Debug.Log($"SessionController: Trial {trialIndex} complete. Press Space for next.");
@@ -231,6 +304,13 @@ public class SessionController : MonoBehaviour
 
     private IEnumerator Phase_AR_UI((TextAsset script, int questionIndex) trial)
     {
+        if (studyCondition == StudyCondition.nAA || studyCondition == StudyCondition.nAT)
+        {
+            Debug.Log($"SessionController: {studyCondition} Mode - No AR UI.");
+            yield return new WaitForSeconds(0.5f);
+            yield break;
+        }
+
         Debug.Log("SessionController: AR UI Enabled. Interact with agents.");
         
         // Show Augmentations
@@ -267,7 +347,7 @@ public class SessionController : MonoBehaviour
         _currentAgents.Clear();
 
         // iAA specific setup
-        if (studyCondition == StudyCondition.iAA)
+        if (studyCondition == StudyCondition.iAA || studyCondition == StudyCondition.nAA)
         {
             // Build Grid (Static 5x4)
             if (gridGenerator)
@@ -292,7 +372,7 @@ public class SessionController : MonoBehaviour
         // Spawn Avatars
         Debug.Log($"SessionController: Phase 1 Setup ({studyCondition}). Spawning avatars.");
         
-        if (studyCondition == StudyCondition.iAA)
+        if (studyCondition == StudyCondition.iAA || studyCondition == StudyCondition.nAA)
         {
             // "Line up on the side". Let's say left of grid.
             Vector3 startPos = gridGenerator ? gridGenerator.GridToWorld(0, 4) : Vector3.zero; // 2 columns left
@@ -304,7 +384,7 @@ public class SessionController : MonoBehaviour
                 SpawnAgent(id, prefab, pos, Quaternion.LookRotation(Vector3.left));
             }
         }
-        else if (studyCondition == StudyCondition.ARR)
+        else if (studyCondition == StudyCondition.iAT || studyCondition == StudyCondition.nAT)
         {
             // Spawn at origins
             for (int i = 1; i <= 4; i++)
@@ -315,7 +395,7 @@ public class SessionController : MonoBehaviour
                 
                 if (origin != null)
                 {
-                    SpawnAgent(id, prefab, origin.position, origin.rotation);
+                    SpawnAgent(id, prefab, origin.position, origin.rotation, origin);
                 }
                 else
                 {
@@ -326,9 +406,9 @@ public class SessionController : MonoBehaviour
         }
     }
 
-    private void SpawnAgent(string id, GameObject prefab, Vector3 pos, Quaternion rot)
+    private void SpawnAgent(string id, GameObject prefab, Vector3 pos, Quaternion rot, Transform parent = null)
     {
-        var go = Instantiate(prefab, pos, rot); 
+        var go = Instantiate(prefab, pos, rot, parent); 
         go.name = id;
         var agt = go.GetComponent<ConversationalAgent>();
         if (!agt) agt = go.AddComponent<ConversationalAgent>();
@@ -380,7 +460,8 @@ public class SessionController : MonoBehaviour
             nextColInRow[row]++; 
 
             Vector3 target = gridGenerator ? gridGenerator.GridToWorld(row, col) : agent.transform.position;
-            yield return MoveAgent(agent.transform, target, moveDuration);
+            float duration = isTestMode ? 0f : moveDuration;
+            yield return MoveAgent(agent.transform, target, duration);
         }
     }
     
@@ -499,8 +580,24 @@ public class SessionController : MonoBehaviour
 
         manager.Play();
 
+        float startTime = Time.time;
         while (manager.IsPlaying) 
         {
+            // Only allow skip after a 0.5s grace period to avoid catching the initial Space press
+            if (isTestMode && Time.time - startTime > 0.5f && Input.GetKeyDown(KeyCode.Space))
+            {
+                manager.Stop();
+                foreach (var agent in _currentAgents)
+                {
+                    var tts = agent.GetComponent<CrossPlatformTTS>();
+                    if (tts) tts.Stop();
+                    
+                    // Manually force animation state to false since tts.Stop() might kill the callback
+                    agent.SendMessage("SetTalkingState", false, SendMessageOptions.DontRequireReceiver);
+                }
+                Debug.Log("SessionController: Test Mode - Discussion Skipped.");
+                break;
+            }
             yield return null;
         }
         
@@ -532,8 +629,34 @@ public class SessionController : MonoBehaviour
 
             // Themes
             string themes = ExtractJsonString(fullJson, "glb_Emg_Themes", grpSumsIdx);
-            if (themesText != null) 
-                themesText.text = FormatBulletinPoints(themes);
+            if (themesTexts != null && themesTexts.Count > 0) 
+            {
+                // Split by ■ to get individual points
+                string[] points = themes.Split(new char[] { '■' }, StringSplitOptions.RemoveEmptyEntries);
+                
+                // Clear all first
+                foreach (var tmp in themesTexts) if (tmp != null) tmp.text = "";
+
+                // Distribute: 1-2 in first TMP, 3-4 in second TMP
+                string firstHalf = "";
+                string secondHalf = "";
+
+                for (int i = 0; i < points.Length; i++)
+                {
+                    string formattedPoint = "■ <indent=1.2em>" + points[i].Trim() + "</indent>";
+                    if (i < 2)
+                    {
+                        firstHalf += formattedPoint + (i == 0 && points.Length > 1 ? "\n" : "");
+                    }
+                    else if (i < 4)
+                    {
+                        secondHalf += formattedPoint + (i == 2 && points.Length > 3 ? "\n" : "");
+                    }
+                }
+
+                if (themesTexts.Count > 0 && themesTexts[0] != null) themesTexts[0].text = firstHalf;
+                if (themesTexts.Count > 1 && themesTexts[1] != null) themesTexts[1].text = secondHalf;
+            }
         }
 
         // 2. Extract Image or Stat Augmentations based on condition
@@ -558,7 +681,7 @@ public class SessionController : MonoBehaviour
                 if (grpSimMatImage != null) StartCoroutine(LoadImageToUI(simMatPath, grpSimMatImage));
             }
         }
-        else if (studyCondition == StudyCondition.ARR)
+        else if (studyCondition == StudyCondition.iAT)
         {
             // Toggle visibility
             if (speakingSumImage != null) speakingSumImage.gameObject.SetActive(false);
@@ -617,7 +740,7 @@ public class SessionController : MonoBehaviour
         string formatted = "";
         for (int i = 0; i < parts.Length; i++)
         {
-            formatted += "■ " + parts[i].Trim() + (i < parts.Length - 1 ? "\n" : "");
+            formatted += "■ <indent=1.2em>" + parts[i].Trim() + "</indent>" + (i < parts.Length - 1 ? "\n" : "");
         }
         return formatted;
     }

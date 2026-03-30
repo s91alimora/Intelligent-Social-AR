@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
-
 [DisallowMultipleComponent]
 public class GridGenerator : MonoBehaviour
 {
@@ -30,15 +29,14 @@ public class GridGenerator : MonoBehaviour
     public GameObject labelPrefab;
     public Camera mainCamera;
 
-
-
     public enum LabelAlignment { Bottom, Right, Left }
     public LabelAlignment labelAlignment = LabelAlignment.Bottom;
 
+    public int rows => _rows;
+    public int cols => _cols;
     int _rows, _cols;
     readonly List<LineRenderer> _lines = new();
     readonly List<GameObject> _labels = new();
-
 
     public void Build(int rows, int cols)
     {
@@ -84,17 +82,17 @@ public class GridGenerator : MonoBehaviour
             if (labelAlignment == LabelAlignment.Right)
             {
                 if (i >= _rows) break;
-                pos = GridToWorld(i, _cols - 1) + new Vector3(cellWidth * 1.0f, labelY, 0f);
+                pos = GridToWorld(i, _cols - 1) + new Vector3(cellWidth * 0.5f, labelY, 0f);
             }
             else if (labelAlignment == LabelAlignment.Left)
             {
                 if (i >= _rows) break;
-                pos = GridToWorld(i, 0) + new Vector3(-cellWidth * 1.0f, labelY, 0f);
+                pos = GridToWorld(i, 0) + new Vector3(-cellWidth * 0.5f, labelY, 0f);
             }
             else
             {
                 if (i >= _cols) break;
-                pos = GridToWorld(-1, i) + new Vector3(0f, labelY, 0f); 
+                pos = GridToWorld(-0.5f, i) + new Vector3(0f, labelY, 0f); 
             }
 
             // Instantiate from prefab
@@ -115,49 +113,45 @@ public class GridGenerator : MonoBehaviour
             {
                 tmp.text = txt;
             }
-            else
-            {
-                // Fallback to legacy if TMP_Text not found (though unlikely given requirements)
-                TextMesh tm = go.GetComponentInChildren<TextMesh>();
-                if (tm != null) tm.text = txt;
-            }
-
-            _labels.Add(go);
         }
     }
 
-    public Vector3 GridToWorld(int row, int col)
+    public void Clear()
     {
-        // Allow -1 row (used for staging/labels)
-        float r = row + 0.0f;
-        float c = col + 0.0f;
-        return origin + new Vector3(c * cellWidth, 0f, r * cellDepth);
-    }
-
-    void AddLine(Vector3 a, Vector3 b)
-    {
-        var go = new GameObject("grid-line");
-        go.transform.SetParent(transform, false);
-        var lr = go.AddComponent<LineRenderer>();
-        lr.useWorldSpace = true;
-        lr.positionCount = 2;
-        lr.SetPositions(new[] { a, b });
-        lr.startWidth = lr.endWidth = lineWidth;
-        lr.material = new Material(Shader.Find("Sprites/Default"));
-        lr.startColor = lr.endColor = lineColor;
-        _lines.Add(lr);
+        ClearLines();
+        ClearLabels();
     }
 
     void ClearLines()
     {
-        foreach (var lr in _lines) if (lr) Destroy(lr.gameObject);
+        foreach (var l in _lines) if (l) Destroy(l.gameObject);
         _lines.Clear();
     }
 
     void ClearLabels()
     {
-        foreach (var go in _labels) if (go) Destroy(go);
+        foreach (var l in _labels) if (l) Destroy(l);
         _labels.Clear();
     }
 
+    public Vector3 GridToWorld(float row, float col)
+    {
+        // Allow fractional rows/cols (used for staging/labels)
+        return origin + new Vector3(col * cellWidth, 0f, row * cellDepth);
+    }
+
+    void AddLine(Vector3 a, Vector3 b)
+    {
+        GameObject go = new GameObject("grid-line");
+        go.transform.SetParent(transform);
+        LineRenderer lr = go.AddComponent<LineRenderer>();
+        lr.material = new Material(Shader.Find("Sprites/Default"));
+        lr.startColor = lr.endColor = lineColor;
+        lr.startWidth = lr.endWidth = lineWidth;
+        lr.positionCount = 2;
+        lr.SetPosition(0, a);
+        lr.SetPosition(1, b);
+        lr.useWorldSpace = true;
+        _lines.Add(lr);
+    }
 }
