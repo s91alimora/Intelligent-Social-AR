@@ -508,7 +508,7 @@ GameObject:
   - component: {fileID: 70762841}
   m_Layer: 0
   m_Name: wall
-  m_TagString: Untagged
+  m_TagString: WallUI
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -4152,6 +4152,7 @@ GameObject:
   - component: {fileID: 574984154}
   - component: {fileID: 574984153}
   - component: {fileID: 574984155}
+  - component: {fileID: 574984156}
   m_Layer: 0
   m_Name: Session Controller
   m_TagString: Untagged
@@ -4187,6 +4188,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 59fab1a6f0e5c584ea001c0879943945, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  participantID: test
+  gazeRecorder: {fileID: 574984156}
   studyCondition: 1
   selectionMode: 1
   manualTrials:
@@ -4377,6 +4380,28 @@ MonoBehaviour:
   layerMask:
     serializedVersion: 2
     m_Bits: 64
+  saccadeThreshold: 0.3
+  jitterBuffer: 0.25
+--- !u!114 &574984156
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 574984147}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1d6cd459909e634a8d10fbd09953fc3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mainCamera: {fileID: 913560726}
+  raySource: {fileID: 913560725}
+  maxDistance: 10
+  layerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  agentTag: Agent
+  wallTag: WallUI
   saccadeThreshold: 0.3
   jitterBuffer: 0.25
 --- !u!1 &577587232
@@ -6685,7 +6710,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &827887144
 Transform:
   m_ObjectHideFlags: 0
