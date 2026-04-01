@@ -111,12 +111,16 @@ public class SessionController : MonoBehaviour
     {
         if (gazeRecorder != null)
         {
+            string pID = participantID;
             string seqName = "";
+
             if (MasterLevelController.Instance != null)
             {
+                pID = MasterLevelController.Instance.participantID;
                 seqName = MasterLevelController.Instance.GetCurrentSequenceName();
             }
-            gazeRecorder.WriteDataToCSV(participantID, seqName);
+
+            gazeRecorder.WriteDataToCSV(pID, seqName);
         }
     }
 

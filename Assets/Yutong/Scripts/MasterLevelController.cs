@@ -16,6 +16,7 @@ public class MasterLevelController : MonoBehaviour
     }
 
     [Header("Study Flow")]
+    public string participantID = "test";
     public StudySequence studySequence = StudySequence.Sequence_1_nAT_nAA_iAT_iAA;
 
     [Header("Scene Names")]
