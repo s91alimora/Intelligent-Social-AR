@@ -51,6 +51,12 @@ public class SessionController : MonoBehaviour
     [Tooltip("Enable to skip lengthy movement and discussion phases")]
     public bool isTestMode = false;
     
+    [Header("Cursor Settings")]
+    public Renderer sphereCursorRenderer;
+    public Color conversationEndColor = Color.green;
+    private Color _originalCursorColor = Color.white;
+    private bool _hasSavedCursorColor = false;
+    
     [Header("iAT Settings")]
     public Transform[] agentOrigins = new Transform[4];
 
@@ -104,6 +110,11 @@ public class SessionController : MonoBehaviour
 
     void Start()
     {
+        if (sphereCursorRenderer != null)
+        {
+            _originalCursorColor = sphereCursorRenderer.material.color;
+            _hasSavedCursorColor = true;
+        }
         StartCoroutine(SetupExperiment());
     }
 
@@ -344,6 +355,12 @@ public class SessionController : MonoBehaviour
 
     private void SetupPhase1()
     {
+        // Restore cursor color to original for new trial
+        if (sphereCursorRenderer != null && _hasSavedCursorColor)
+        {
+            sphereCursorRenderer.material.color = _originalCursorColor;
+        }
+
         // Hide Augmentations at start of trial
         if (augmentationPanel != null) augmentationPanel.SetActive(false);
         if (interacter != null) interacter.SetActive(false);
@@ -608,6 +625,13 @@ public class SessionController : MonoBehaviour
         }
         
         Debug.Log("SessionController: Discussion Finished.");
+        
+        // Turn cursor green automatically when conversation ends
+        if (sphereCursorRenderer != null)
+        {
+            sphereCursorRenderer.material.color = conversationEndColor;
+        }
+
         // FIX: Add small buffer to prevent accidental Space pass-through
         yield return new WaitForSeconds(0.5f);
         Debug.Log("SessionController: Ready for Phase 4. Press Space.");

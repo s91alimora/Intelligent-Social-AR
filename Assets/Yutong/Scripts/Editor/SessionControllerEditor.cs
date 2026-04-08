@@ -29,6 +29,8 @@ public class SessionControllerEditor : Editor
     private SerializedProperty isTestMode;
     private SerializedProperty selectionMode;
     private SerializedProperty manualTrials;
+    private SerializedProperty sphereCursorRenderer;
+    private SerializedProperty conversationEndColor;
 
     private void OnEnable()
     {
@@ -56,6 +58,8 @@ public class SessionControllerEditor : Editor
         isTestMode = serializedObject.FindProperty("isTestMode");
         selectionMode = serializedObject.FindProperty("selectionMode");
         manualTrials = serializedObject.FindProperty("manualTrials");
+        sphereCursorRenderer = serializedObject.FindProperty("sphereCursorRenderer");
+        conversationEndColor = serializedObject.FindProperty("conversationEndColor");
     }
 
     public override void OnInspectorGUI()
@@ -123,6 +127,11 @@ public class SessionControllerEditor : Editor
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("General Settings", EditorStyles.boldLabel);
         EditorGUILayout.PropertyField(isTestMode);
+
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Cursor Settings", EditorStyles.boldLabel);
+        EditorGUILayout.PropertyField(sphereCursorRenderer);
+        EditorGUILayout.PropertyField(conversationEndColor);
 
         EditorGUILayout.Space();
         
