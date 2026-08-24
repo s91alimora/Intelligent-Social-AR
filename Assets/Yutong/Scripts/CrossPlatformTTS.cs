@@ -25,12 +25,29 @@ public class CrossPlatformTTS : MonoBehaviour
     [Tooltip("Optional extra CLI args passed to Piper.")]
     public string extraArgs = "";
 
+    [Header("Loudness Normalization")]
+    [Tooltip("Equalize perceived loudness across voices: each clip's speech RMS is measured once and the " +
+             "AudioSource volume is set so every voice plays at the target level. Applies to both " +
+             "runtime-synthesized and pre-baked audio, and reacts immediately to setting changes.")]
+    public bool normalizeLoudness = true;
+    [Tooltip("Target speech-level RMS in dBFS. -20 dBFS is below the quietest bundled voice, so the derived gain is always an attenuation (volume <= 1).")]
+    public float targetRmsDb = -20f;
+
     public bool IsSpeaking { get; private set; }
 
     AudioSource _src;
 
-    static readonly Dictionary<string, AudioClip> _cache = new();
-    string Key(string text) => $"{modelFileName}|{lengthScale}|{noiseScale}|{text}";
+    class CachedLine
+    {
+        public AudioClip clip;
+        public float speechRms; // gated speech-level RMS of the raw clip; playback volume is derived from this
+    }
+
+    static readonly Dictionary<string, CachedLine> _cache = new();
+    // Invariant culture keeps cache keys (and thus baked MD5 filenames) identical across machine locales.
+    string Key(string text) => $"{modelFileName}|{FloatInv(lengthScale)}|{FloatInv(noiseScale)}|{text}";
+
+    static string FloatInv(float v) => v.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
     public string GetBakedFilename(string text)
     {
@@ -69,16 +86,69 @@ public class CrossPlatformTTS : MonoBehaviour
         StartCoroutine(SpeakCo(text, onComplete));
     }
 
-    public static void ClearCache() => _cache.Clear();
+    /// <summary>Frees all cached clips (native audio memory). Call between condition scenes.</summary>
+    public static void ClearCache()
+    {
+        foreach (var entry in _cache.Values)
+        {
+            if (entry.clip != null) Destroy(entry.clip);
+        }
+        _cache.Clear();
+    }
 
-    IEnumerator PlayCached(AudioClip clip, Action done)
+    IEnumerator PlayCached(CachedLine line, Action done)
     {
         IsSpeaking = true;
-        _src.clip = clip;
+        _src.clip = line.clip;
+        _src.volume = GetPlaybackVolume(line.speechRms);
         _src.Play();
         yield return new WaitWhile(() => _src.isPlaying);
         IsSpeaking = false;
         done?.Invoke();
+    }
+
+    /// <summary>
+    /// Volume that brings a clip with the given speech RMS to targetRmsDb. Computed at playback time,
+    /// so toggling normalizeLoudness / changing targetRmsDb takes effect even for already-cached lines.
+    /// Always an attenuation for the bundled voices (target sits below their natural level).
+    /// </summary>
+    float GetPlaybackVolume(float speechRms)
+    {
+        if (!normalizeLoudness || speechRms <= 0f) return 1f;
+        return Mathf.Min(1f, Mathf.Pow(10f, targetRmsDb / 20f) / speechRms);
+    }
+
+    /// <summary>
+    /// Gated speech-level RMS of a clip, measured over 30 ms frames read in small chunks
+    /// (no full-buffer allocation, no sample rewriting). Gate = 3% of the loudest frame's RMS.
+    /// </summary>
+    static float MeasureSpeechRms(AudioClip clip)
+    {
+        if (clip == null || clip.samples == 0) return 0f;
+
+        int framePerChannel = Mathf.Max(1, (int)(0.03f * clip.frequency));
+        int nFrames = clip.samples / framePerChannel;
+        if (nFrames == 0) return 0f;
+
+        var buf = new float[framePerChannel * clip.channels];
+        var frameRms = new float[nFrames];
+        float maxFrameRms = 0f;
+        for (int f = 0; f < nFrames; f++)
+        {
+            if (!clip.GetData(buf, f * framePerChannel)) return 0f;
+            double sum = 0;
+            for (int i = 0; i < buf.Length; i++) sum += buf[i] * buf[i];
+            frameRms[f] = Mathf.Sqrt((float)(sum / buf.Length));
+            if (frameRms[f] > maxFrameRms) maxFrameRms = frameRms[f];
+        }
+
+        float gate = Mathf.Max(maxFrameRms * 0.03f, 1e-4f);
+        double acc = 0; int n = 0;
+        for (int f = 0; f < nFrames; f++)
+        {
+            if (frameRms[f] > gate) { acc += (double)frameRms[f] * frameRms[f]; n++; }
+        }
+        return n == 0 ? 0f : Mathf.Sqrt((float)(acc / n));
     }
 
 
@@ -117,10 +187,12 @@ public class CrossPlatformTTS : MonoBehaviour
                 if (req.result == UnityWebRequest.Result.Success)
                 {
                     AudioClip clip = DownloadHandlerAudioClip.GetContent(req);
-                    _cache[Key(text)] = clip;
+                    var line = new CachedLine { clip = clip, speechRms = MeasureSpeechRms(clip) };
+                    _cache[Key(text)] = line;
                     if (!prepareOnly)
                     {
                         _src.clip = clip;
+                        _src.volume = GetPlaybackVolume(line.speechRms);
                         IsSpeaking = true;
                         _src.Play();
                         yield return new WaitWhile(() => _src.isPlaying);
@@ -147,7 +219,7 @@ public class CrossPlatformTTS : MonoBehaviour
 
         // Build Piper CLI args
         // --model <onnx>  --output_file <wav>  --length_scale <f>  --noise_scale <f>
-        string args = $"--model \"{model}\" --output_file \"{wavPath}\" --length_scale {lengthScale:0.###} --noise_scale {noiseScale:0.###}";
+        string args = $"--model \"{model}\" --output_file \"{wavPath}\" --length_scale {lengthScale.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)} --noise_scale {noiseScale.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)}";
         if (!string.IsNullOrWhiteSpace(extraArgs)) args = extraArgs + " " + args;
 
         var psi = new PSI
@@ -163,12 +235,13 @@ public class CrossPlatformTTS : MonoBehaviour
 
         using (var p = Proc.Start(psi))
         {
+            // Drain stderr asynchronously: with RedirectStandardError set, an undrained pipe can fill
+            // and block piper forever (HasExited would never turn true), hanging the session.
+            p.ErrorDataReceived += (_, _) => { };
+            p.BeginErrorReadLine();
+
             p.StandardInput.Write(text);
             p.StandardInput.Close();
-
-            // For debugging, uncomment:
-            // string err = p.StandardError.ReadToEnd();
-            // if (!string.IsNullOrEmpty(err)) UDebug.LogWarning(err);
 
             //p.WaitForExit();
             // Non-blocking wait inside coroutine:
@@ -187,13 +260,15 @@ public class CrossPlatformTTS : MonoBehaviour
                 done?.Invoke(); yield break;
             }
             var clip = UnityEngine.Networking.DownloadHandlerAudioClip.GetContent(req);
+            var line = new CachedLine { clip = clip, speechRms = MeasureSpeechRms(clip) };
 
             // cache
-            _cache[Key(text)] = clip;
+            _cache[Key(text)] = line;
 
             if (!prepareOnly)
             {
                 _src.clip = clip;
+                _src.volume = GetPlaybackVolume(line.speechRms);
                 IsSpeaking = true;
                 _src.Play();
                 yield return new WaitWhile(() => _src.isPlaying);
@@ -251,7 +326,7 @@ public class CrossPlatformTTS : MonoBehaviour
         string model = ResolveModelPath();
         if (exe == null || model == null) return;
 
-        string args = $"--model \"{model}\" --output_file \"{targetPath}\" --length_scale {lengthScale:0.###} --noise_scale {noiseScale:0.###}";
+        string args = $"--model \"{model}\" --output_file \"{targetPath}\" --length_scale {lengthScale.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)} --noise_scale {noiseScale.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)}";
         if (!string.IsNullOrWhiteSpace(extraArgs)) args = extraArgs + " " + args;
 
         var psi = new PSI
