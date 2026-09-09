@@ -29,6 +29,8 @@ public class SessionControllerEditor : Editor
     private SerializedProperty isTestMode;
     private SerializedProperty selectionMode;
     private SerializedProperty manualTrials;
+    private SerializedProperty enableIntroductionPhase;
+    private SerializedProperty introductionLineFormat;
 
     private void OnEnable()
     {
@@ -56,6 +58,8 @@ public class SessionControllerEditor : Editor
         isTestMode = serializedObject.FindProperty("isTestMode");
         selectionMode = serializedObject.FindProperty("selectionMode");
         manualTrials = serializedObject.FindProperty("manualTrials");
+        enableIntroductionPhase = serializedObject.FindProperty("enableIntroductionPhase");
+        introductionLineFormat = serializedObject.FindProperty("introductionLineFormat");
     }
 
     public override void OnInspectorGUI()
@@ -67,6 +71,15 @@ public class SessionControllerEditor : Editor
         EditorGUILayout.PropertyField(gazeRecorder);
         EditorGUILayout.PropertyField(studyCondition);
         EditorGUILayout.PropertyField(selectionMode);
+
+        if ((SessionController.QuestionSelectionMode)selectionMode.enumValueIndex == SessionController.QuestionSelectionMode.ConditionScript)
+        {
+            var cond = (SessionController.StudyCondition)studyCondition.enumValueIndex;
+            EditorGUILayout.HelpBox(
+                $"Loads Resources/{SessionController.ManuscriptResourceFolder}/{cond}.json - the compiled per-condition " +
+                "manuscript with questions 1-4 in final asking order. No script wiring needed.",
+                MessageType.Info);
+        }
 
         if ((SessionController.QuestionSelectionMode)selectionMode.enumValueIndex == SessionController.QuestionSelectionMode.Manual)
         {
@@ -123,6 +136,14 @@ public class SessionControllerEditor : Editor
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("General Settings", EditorStyles.boldLabel);
         EditorGUILayout.PropertyField(isTestMode);
+
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Introduction Phase", EditorStyles.boldLabel);
+        EditorGUILayout.PropertyField(enableIntroductionPhase);
+        if (enableIntroductionPhase.boolValue)
+        {
+            EditorGUILayout.PropertyField(introductionLineFormat);
+        }
 
         EditorGUILayout.Space();
         
