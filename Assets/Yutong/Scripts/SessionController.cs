@@ -19,7 +19,18 @@ public class SessionController : MonoBehaviour
     public SessionPhase CurrentPhase { get; private set; }
 
     public enum StudyCondition { iAA, iAT, nAA, nAT }
-    public enum QuestionSelectionMode { Random, Manual }
+    public enum QuestionSelectionMode { Random, Manual, ConditionScript }
+
+    // ConditionScript mode: each condition has ONE compiled manuscript named by its abbreviation
+    // (iAA.json, iAT.json, nAA.json, nAT.json) under Assets/Resources/<this folder>/, holding
+    // question_1..4_Data in final asking order (the Table 8 script/question mixing pre-applied).
+    public const string ManuscriptResourceFolder = "Manuscripts";
+
+    // Stance carried by each grid row, index = row number (0 = near row at z=0, 4 = far row).
+    // Both the floor labels AND the seating destinations derive from this one array, so they can
+    // never disagree - to reorder the grid, reorder here only. Must match the stance strings in
+    // the manuscripts and the row order depicted in the pre-rendered augmentation charts.
+    private static readonly string[] RowRanks = { "Very Good", "Good", "Neutral", "Bad", "Very Bad" };
     
     [Serializable]
     public struct ManualTrialSelection
@@ -50,6 +61,13 @@ public class SessionController : MonoBehaviour
     public float lineUpSpacing = 1.2f;
     [Tooltip("Enable to skip lengthy movement and discussion phases")]
     public bool isTestMode = false;
+
+    [Header("Introduction Phase")]
+    [Tooltip("If enabled, the avatars introduce themselves once per condition, at the start of the first trial - " +
+             "identical across all four conditions and BEFORE any gaze recording starts.")]
+    public bool enableIntroductionPhase = true;
+    [Tooltip("Line spoken by each avatar during the introduction. {0} = avatar display name.")]
+    public string introductionLineFormat = "Hi, I'm {0}. Nice to meet you.";
     
     [Header("iAT Settings")]
     public Transform[] agentOrigins = new Transform[4];
@@ -70,6 +88,7 @@ public class SessionController : MonoBehaviour
     // Internal State
     public bool isExperimentFinished { get; private set; } = false;
     private Dictionary<string, GameObject> _agentMapping = new(); // "agent_1" -> Prefab
+    private string _currentTeamName = ""; // Avatar team used in this condition (for logs/CSV)
     private List<ConversationalAgent> _currentAgents = new(); // Spawned instances
     private List<(TextAsset script, int questionIndex)> _trialSequence = new();
     private int _currentTrialIndex = 0;
@@ -133,31 +152,109 @@ public class SessionController : MonoBehaviour
 
     private IEnumerator SetupExperiment()
     {
-        // 1. Select Avatars (2 Male, 2 Female)
-        if (availableMaleAvatars.Count < 2 || availableFemaleAvatars.Count < 2)
+        if (MasterLevelController.Instance != null)
         {
-            Debug.LogError("Not enough avatars assigned! Need at least 2 Male and 2 Female.");
-            yield break;
+            // Guard 1: the loaded scene must actually be the condition the master intended -
+            // scene names are free-text fields, so a paste error would otherwise run (and log)
+            // the wrong condition with the wrong team, silently corrupting the counterbalance.
+            var expected = MasterLevelController.Instance.GetExpectedCondition();
+            if (studyCondition != expected)
+            {
+                Debug.LogError($"[SessionController] CONDITION MISMATCH: this scene is serialized as {studyCondition} " +
+                               $"but MasterLevelController expected {expected} at trial position " +
+                               $"{MasterLevelController.Instance.CurrentConditionIndex + 1}. " +
+                               "Check the scene-name fields on MasterLevelController and this scene's Study Condition. Halting setup.");
+                yield break;
+            }
+
+            // Guard 2: in a master-driven (real study) run, test mode skips the introduction phase
+            // and allows Space-skipping of discussions. It is also surfaced on the wall text
+            // (see SetupPhase1) so it cannot run unnoticed.
+            if (isTestMode)
+            {
+                Debug.LogWarning("[SessionController] isTestMode is ON during a master-driven run - " +
+                                 "introductions are skipped and discussions can be skipped with Space. " +
+                                 "Turn it OFF in this scene before running a real participant!");
+            }
         }
 
-        var males = availableMaleAvatars.OrderBy(x => UnityEngine.Random.value).Take(2).ToList();
-        var females = availableFemaleAvatars.OrderBy(x => UnityEngine.Random.value).Take(2).ToList();
-        var selected = new List<GameObject>();
-        selected.AddRange(males);
-        selected.AddRange(females);
-        
-        // Randomly shuffle the 4 selected avatars
-        selected = selected.OrderBy(x => UnityEngine.Random.value).ToList();
+        // 1. Select Avatars
+        // Primary path: deterministic team lookup from MasterLevelController.
+        // The team for this condition scene is fixed by trial position (Team A = trial 1, ...),
+        // and the member order IS the casting: member i plays agent_{i+1} for every participant.
+        // This makes avatar identity a counterbalanced factor instead of random noise.
+        var teamMembers = MasterLevelController.Instance != null
+            ? MasterLevelController.Instance.GetTeamForCurrentCondition()
+            : null;
 
-        // Persistent mapping for "agent_1" to "agent_4"
-        _agentMapping.Clear();
-        for (int i = 0; i < 4; i++)
+        if (teamMembers != null)
         {
-            _agentMapping[$"agent_{i + 1}"] = selected[i];
+            _currentTeamName = MasterLevelController.Instance.GetCurrentTeamName();
+            _agentMapping.Clear();
+            for (int i = 0; i < 4; i++)
+            {
+                _agentMapping[$"agent_{i + 1}"] = teamMembers[i];
+            }
+            Debug.Log($"[SessionController] Avatar team '{_currentTeamName}' (trial position " +
+                      $"{MasterLevelController.Instance.CurrentConditionIndex + 1}): " +
+                      string.Join(", ", teamMembers.Select((m, i) => $"agent_{i + 1}={m.name}")));
+        }
+        else
+        {
+            // Fallback for standalone scene testing (no master / teams not configured): random 2M+2F draw
+            _currentTeamName = "";
+            if (availableMaleAvatars.Count < 2 || availableFemaleAvatars.Count < 2)
+            {
+                Debug.LogError("Not enough avatars assigned! Need at least 2 Male and 2 Female.");
+                yield break;
+            }
+
+            var males = availableMaleAvatars.OrderBy(x => UnityEngine.Random.value).Take(2).ToList();
+            var females = availableFemaleAvatars.OrderBy(x => UnityEngine.Random.value).Take(2).ToList();
+            var selected = new List<GameObject>();
+            selected.AddRange(males);
+            selected.AddRange(females);
+
+            // Randomly shuffle the 4 selected avatars
+            selected = selected.OrderBy(x => UnityEngine.Random.value).ToList();
+
+            Debug.LogWarning("[SessionController] No avatar team available - using RANDOM avatar draw (standalone testing only).");
+
+            // Persistent mapping for "agent_1" to "agent_4"
+            _agentMapping.Clear();
+            for (int i = 0; i < 4; i++)
+            {
+                _agentMapping[$"agent_{i + 1}"] = selected[i];
+            }
         }
 
         // 2. Generate Trial Sequence (4 Trials)
         _trialSequence.Clear();
+
+        if (selectionMode == QuestionSelectionMode.ConditionScript)
+        {
+            // Load the per-condition compiled manuscript by the condition abbreviation itself -
+            // no per-scene file wiring, so scenes can never silently point at a stale script.
+            var conditionScript = Resources.Load<TextAsset>($"{ManuscriptResourceFolder}/{studyCondition}");
+            if (conditionScript == null)
+            {
+                Debug.LogError($"[SessionController] No manuscript found at Resources/{ManuscriptResourceFolder}/{studyCondition}.json - " +
+                               "add the compiled per-condition script or change Selection Mode. Halting setup.");
+                yield break;
+            }
+
+            Debug.Log($"[SessionController] Loaded condition manuscript '{conditionScript.name}' for {studyCondition} (questions 1-4 in order).");
+            for (int q = 1; q <= 4; q++)
+            {
+                _trialSequence.Add((conditionScript, q));
+            }
+
+            _currentTrialIndex = 0;
+            yield return StartTrial(_currentTrialIndex);
+            yield break;
+        }
+
+        // --- Legacy modes below (Manual piloting / master-generated blocks / random standalone) ---
         if (scriptFiles.Count < 4)
         {
             Debug.LogError("Need 4 Script JSON files assigned!");
@@ -230,10 +327,12 @@ public class SessionController : MonoBehaviour
     private IEnumerator StartTrial_iAA(int trialIndex)
     {
         var trial = _trialSequence[trialIndex];
-        
+
         // Phase 1: Setup (Line Up)
         CurrentPhase = SessionPhase.Setup;
         SetupPhase1();
+
+        yield return RunIntroductionIfNeeded(trialIndex);
 
         // Wait for Space -> Phase 2
         yield return WaitForKey(KeyCode.Space);
@@ -247,7 +346,7 @@ public class SessionController : MonoBehaviour
 
         // Phase 3: Discussion
         CurrentPhase = SessionPhase.Discussion;
-        if (gazeRecorder != null) gazeRecorder.StartRecording(studyCondition.ToString(), trial.script.name, trial.questionIndex, "Conversation");
+        if (gazeRecorder != null) gazeRecorder.StartRecording(studyCondition.ToString(), trial.script.name, trial.questionIndex, "Conversation", _currentTeamName);
         yield return DiscussionPhase3();
         if (studyCondition == StudyCondition.nAA) { if (gazeRecorder != null) gazeRecorder.StopRecording(); }
 
@@ -256,7 +355,7 @@ public class SessionController : MonoBehaviour
 
         // Phase 4: AR UI
         CurrentPhase = SessionPhase.AR_UI;
-        if (studyCondition == StudyCondition.iAA) { if (gazeRecorder != null) gazeRecorder.StartRecording(studyCondition.ToString(), trial.script.name, trial.questionIndex, "Augmentation"); }
+        if (studyCondition == StudyCondition.iAA) { if (gazeRecorder != null) gazeRecorder.StartRecording(studyCondition.ToString(), trial.script.name, trial.questionIndex, "Augmentation", _currentTeamName); }
         yield return Phase_AR_UI(trial);
         if (gazeRecorder != null) gazeRecorder.StopRecording();
 
@@ -271,17 +370,19 @@ public class SessionController : MonoBehaviour
     private IEnumerator StartTrial_iAT(int trialIndex)
     {
         var trial = _trialSequence[trialIndex];
-        
+
         // Phase 1: Setup (Origins)
         CurrentPhase = SessionPhase.Setup;
         SetupPhase1();
+
+        yield return RunIntroductionIfNeeded(trialIndex);
 
         // Wait for Space -> Phase 2 (Discussion)
         yield return WaitForKey(KeyCode.Space);
 
         // Phase 2: Discussion
         CurrentPhase = SessionPhase.Discussion;
-        if (gazeRecorder != null) gazeRecorder.StartRecording(studyCondition.ToString(), trial.script.name, trial.questionIndex, "Conversation");
+        if (gazeRecorder != null) gazeRecorder.StartRecording(studyCondition.ToString(), trial.script.name, trial.questionIndex, "Conversation", _currentTeamName);
         yield return DiscussionPhase3();
         if (studyCondition == StudyCondition.nAT) { if (gazeRecorder != null) gazeRecorder.StopRecording(); }
 
@@ -290,7 +391,7 @@ public class SessionController : MonoBehaviour
 
         // Phase 3: AR UI
         CurrentPhase = SessionPhase.AR_UI;
-        if (studyCondition == StudyCondition.iAT) { if (gazeRecorder != null) gazeRecorder.StartRecording(studyCondition.ToString(), trial.script.name, trial.questionIndex, "Augmentation"); }
+        if (studyCondition == StudyCondition.iAT) { if (gazeRecorder != null) gazeRecorder.StartRecording(studyCondition.ToString(), trial.script.name, trial.questionIndex, "Augmentation", _currentTeamName); }
         yield return Phase_AR_UI(trial);
         if (gazeRecorder != null) gazeRecorder.StopRecording();
 
@@ -336,6 +437,114 @@ public class SessionController : MonoBehaviour
 
     // --- Phase Implementations ---
 
+    /// <summary>
+    /// One-time introduction gate: first trial of this condition only, identical across all four
+    /// conditions, and before any gaze recording (which starts at Discussion). Kept in one place so
+    /// the iAA- and iAT-family flows can never diverge procedurally.
+    /// </summary>
+    private IEnumerator RunIntroductionIfNeeded(int trialIndex)
+    {
+        if (!ShouldRunIntroduction(trialIndex)) yield break;
+        yield return WaitForKey(KeyCode.Space);
+        yield return IntroductionPhase();
+
+        // Reveal the first question only after the avatars have introduced themselves.
+        ShowWallQuestion();
+    }
+
+    private bool ShouldRunIntroduction(int trialIndex)
+    {
+        return trialIndex == 0 && enableIntroductionPhase && !isTestMode;
+    }
+
+    private void ShowWallQuestion()
+    {
+        if (wallQuestionText == null)
+        {
+            Debug.LogWarning("SessionController: Wall Question Text not assigned.");
+            return;
+        }
+        // Test mode is surfaced on the wall itself so it can never run unnoticed in a real session.
+        wallQuestionText.text = isTestMode
+            ? "[TEST MODE] " + _currentQuestionData.questionText
+            : _currentQuestionData.questionText;
+    }
+
+    /// <summary>
+    /// Avatars introduce themselves in casting order (agent_1..agent_4). Runs once per condition,
+    /// before the first discussion, so introductions never contaminate Conversation-phase gaze data.
+    /// The content and structure are identical in all four conditions (a constant addition).
+    /// </summary>
+    private IEnumerator IntroductionPhase()
+    {
+        Debug.Log("SessionController: Introduction Phase.");
+
+        foreach (var agt in _currentAgents) agt.sentences.Clear();
+
+        var steps = new List<ConversationStep>();
+        foreach (var agent in _currentAgents.OrderBy(a => a.agentName))
+        {
+            agent.sentences.Add(BuildIntroductionLine(agent.displayName));
+            steps.Add(new ConversationStep { agent = agent, sentenceIndex = agent.sentences.Count - 1 });
+        }
+
+        yield return PlayStepsAndWait(steps, allowTestSkip: false);
+        Debug.Log("SessionController: Introductions complete. Press Space to continue.");
+    }
+
+    private string BuildIntroductionLine(string displayName)
+    {
+        // The format string is inspector-editable; a stray brace must not kill the trial coroutine.
+        try
+        {
+            return string.Format(introductionLineFormat, displayName);
+        }
+        catch (FormatException)
+        {
+            Debug.LogError($"[SessionController] Introduction Line Format '{introductionLineFormat}' is not a valid " +
+                           "format string (use {0} for the avatar name). Falling back to a default introduction.");
+            return $"Hi, I'm {displayName}.";
+        }
+    }
+
+    /// <summary>
+    /// Shared playback ritual for introductions and discussions: hand the steps to the manager,
+    /// play, wait for completion (optionally allowing the test-mode Space skip), then a short
+    /// buffer so the finishing frame's input cannot pass through to the next WaitForKey.
+    /// </summary>
+    private IEnumerator PlayStepsAndWait(List<ConversationStep> steps, bool allowTestSkip)
+    {
+        manager.agents = _currentAgents;
+        manager.sequence = steps;
+        manager.playOnStart = false;
+
+        manager.Play();
+
+        float startTime = Time.time;
+        while (manager.IsPlaying)
+        {
+            // Only allow skip after a 0.5s grace period to avoid catching the initial Space press
+            if (allowTestSkip && isTestMode && Time.time - startTime > 0.5f && Input.GetKeyDown(KeyCode.Space))
+            {
+                manager.Stop();
+                foreach (var agent in _currentAgents)
+                {
+                    var tts = agent.GetComponent<CrossPlatformTTS>();
+                    if (tts) tts.Stop();
+
+                    // Manually force animation state to false since tts.Stop() might kill the callback
+                    agent.SendMessage("SetTalkingState", false, SendMessageOptions.DontRequireReceiver);
+                }
+                Debug.Log("SessionController: Test Mode - Discussion Skipped.");
+                break;
+            }
+            yield return null;
+        }
+
+        // Small buffer to prevent accidental Space pass-through
+        yield return new WaitForSeconds(0.5f);
+    }
+
     private void SetupPhase1()
     {
         // Hide Augmentations at start of trial
@@ -354,19 +563,20 @@ public class SessionController : MonoBehaviour
             {
                 Debug.Log("SessionController: Building Grid 5 Rows x 4 Cols");
                 gridGenerator.labelAlignment = GridGenerator.LabelAlignment.Left;
-                gridGenerator.Build(5, 4); 
-                gridGenerator.BuildLabels(new List<string> { "Very Bad", "Bad", "Neutral", "Good", "Very Good" });
+                gridGenerator.Build(RowRanks.Length, 4);
+                gridGenerator.BuildLabels(new List<string>(RowRanks));
             }
         }
 
-        // Show Question
-        if (wallQuestionText != null)
+        // Show Question - except on a first trial with introductions pending: there the wall stays
+        // blank until the avatars have introduced themselves (revealed in RunIntroductionIfNeeded).
+        if (ShouldRunIntroduction(_currentTrialIndex))
         {
-            wallQuestionText.text = _currentQuestionData.questionText;
+            if (wallQuestionText != null) wallQuestionText.text = "";
         }
         else
         {
-            Debug.LogWarning("SessionController: Wall Question Text not assigned.");
+            ShowWallQuestion();
         }
 
         // Spawn Avatars
@@ -431,12 +641,10 @@ public class SessionController : MonoBehaviour
         Debug.Log("SessionController: Phase 2 Moving.");
         var posConfig = _currentQuestionData.apr_Positions;
         
-        var rankToRow = new Dictionary<string, int>
-        {
-            {"Very Bad", 0}, {"Bad", 1}, {"Neutral", 2}, {"Good", 3}, {"Very Good", 4}
-        };
+        var rankToRow = new Dictionary<string, int>();
+        for (int r = 0; r < RowRanks.Length; r++) rankToRow[RowRanks[r]] = r;
 
-        var nextColInRow = new int[5]; // defaults to 0
+        var nextColInRow = new int[RowRanks.Length]; // defaults to 0
         
         foreach (int agentNum in posConfig.order_Seating)
         {
@@ -574,37 +782,9 @@ public class SessionController : MonoBehaviour
             steps.Add(new ConversationStep { agent = agent, sentenceIndex = idx });
         }
 
-        manager.agents = _currentAgents;
-        manager.sequence = steps;
-        manager.playOnStart = false; 
+        yield return PlayStepsAndWait(steps, allowTestSkip: true);
 
-        manager.Play();
-
-        float startTime = Time.time;
-        while (manager.IsPlaying) 
-        {
-            // Only allow skip after a 0.5s grace period to avoid catching the initial Space press
-            if (isTestMode && Time.time - startTime > 0.5f && Input.GetKeyDown(KeyCode.Space))
-            {
-                manager.Stop();
-                foreach (var agent in _currentAgents)
-                {
-                    var tts = agent.GetComponent<CrossPlatformTTS>();
-                    if (tts) tts.Stop();
-                    
-                    // Manually force animation state to false since tts.Stop() might kill the callback
-                    agent.SendMessage("SetTalkingState", false, SendMessageOptions.DontRequireReceiver);
-                }
-                Debug.Log("SessionController: Test Mode - Discussion Skipped.");
-                break;
-            }
-            yield return null;
-        }
-        
-        Debug.Log("SessionController: Discussion Finished.");
-        // FIX: Add small buffer to prevent accidental Space pass-through
-        yield return new WaitForSeconds(0.5f);
-        Debug.Log("SessionController: Ready for Phase 4. Press Space.");
+        Debug.Log("SessionController: Discussion Finished. Ready for Phase 4. Press Space.");
     }
 
     private void ShowGroupAugmentations()
