@@ -69,6 +69,12 @@ public class SessionController : MonoBehaviour
     [Tooltip("Line spoken by each avatar during the introduction. {0} = avatar display name.")]
     public string introductionLineFormat = "Hi, I'm {0}. Nice to meet you.";
     
+    [Header("Cursor Settings")]
+    public Renderer sphereCursorRenderer;
+    public Color conversationEndColor = Color.green;
+    private Color _originalCursorColor = Color.white;
+    private bool _hasSavedCursorColor = false;
+    
     [Header("iAT Settings")]
     public Transform[] agentOrigins = new Transform[4];
 
@@ -123,6 +129,11 @@ public class SessionController : MonoBehaviour
 
     void Start()
     {
+        if (sphereCursorRenderer != null)
+        {
+            _originalCursorColor = sphereCursorRenderer.material.color;
+            _hasSavedCursorColor = true;
+        }
         StartCoroutine(SetupExperiment());
     }
 
@@ -130,12 +141,16 @@ public class SessionController : MonoBehaviour
     {
         if (gazeRecorder != null)
         {
+            string pID = participantID;
             string seqName = "";
+
             if (MasterLevelController.Instance != null)
             {
+                pID = MasterLevelController.Instance.participantID;
                 seqName = MasterLevelController.Instance.GetCurrentSequenceName();
             }
-            gazeRecorder.WriteDataToCSV(participantID, seqName);
+
+            gazeRecorder.WriteDataToCSV(pID, seqName);
         }
     }
 
@@ -357,11 +372,12 @@ public class SessionController : MonoBehaviour
         CurrentPhase = SessionPhase.AR_UI;
         if (studyCondition == StudyCondition.iAA) { if (gazeRecorder != null) gazeRecorder.StartRecording(studyCondition.ToString(), trial.script.name, trial.questionIndex, "Augmentation", _currentTeamName); }
         yield return Phase_AR_UI(trial);
-        if (gazeRecorder != null) gazeRecorder.StopRecording();
 
         // Wait for Space -> Next Trial
         Debug.Log($"SessionController: Trial {trialIndex} complete. Press Space for next.");
         yield return WaitForKey(KeyCode.Space);
+
+        if (studyCondition == StudyCondition.iAA) { if (gazeRecorder != null) gazeRecorder.StopRecording(); }
 
         // Next
         FinishTrial();
@@ -393,11 +409,12 @@ public class SessionController : MonoBehaviour
         CurrentPhase = SessionPhase.AR_UI;
         if (studyCondition == StudyCondition.iAT) { if (gazeRecorder != null) gazeRecorder.StartRecording(studyCondition.ToString(), trial.script.name, trial.questionIndex, "Augmentation", _currentTeamName); }
         yield return Phase_AR_UI(trial);
-        if (gazeRecorder != null) gazeRecorder.StopRecording();
 
         // Wait for Space -> Next Trial
         Debug.Log($"SessionController: Trial {trialIndex} complete. Press Space for next.");
         yield return WaitForKey(KeyCode.Space);
+
+        if (studyCondition == StudyCondition.iAT) { if (gazeRecorder != null) gazeRecorder.StopRecording(); }
 
         // Next
         FinishTrial();
@@ -547,6 +564,12 @@ public class SessionController : MonoBehaviour
 
     private void SetupPhase1()
     {
+        // Restore cursor color to original for new trial
+        if (sphereCursorRenderer != null && _hasSavedCursorColor)
+        {
+            sphereCursorRenderer.material.color = _originalCursorColor;
+        }
+
         // Hide Augmentations at start of trial
         if (augmentationPanel != null) augmentationPanel.SetActive(false);
         if (interacter != null) interacter.SetActive(false);
@@ -783,6 +806,12 @@ public class SessionController : MonoBehaviour
         }
 
         yield return PlayStepsAndWait(steps, allowTestSkip: true);
+
+        // Turn cursor green automatically when conversation ends
+        if (sphereCursorRenderer != null)
+        {
+            sphereCursorRenderer.material.color = conversationEndColor;
+        }
 
         Debug.Log("SessionController: Discussion Finished. Ready for Phase 4. Press Space.");
     }

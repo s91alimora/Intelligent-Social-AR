@@ -31,6 +31,8 @@ public class SessionControllerEditor : Editor
     private SerializedProperty manualTrials;
     private SerializedProperty enableIntroductionPhase;
     private SerializedProperty introductionLineFormat;
+    private SerializedProperty sphereCursorRenderer;
+    private SerializedProperty conversationEndColor;
 
     private void OnEnable()
     {
@@ -60,6 +62,8 @@ public class SessionControllerEditor : Editor
         manualTrials = serializedObject.FindProperty("manualTrials");
         enableIntroductionPhase = serializedObject.FindProperty("enableIntroductionPhase");
         introductionLineFormat = serializedObject.FindProperty("introductionLineFormat");
+        sphereCursorRenderer = serializedObject.FindProperty("sphereCursorRenderer");
+        conversationEndColor = serializedObject.FindProperty("conversationEndColor");
     }
 
     public override void OnInspectorGUI()
@@ -144,6 +148,9 @@ public class SessionControllerEditor : Editor
         {
             EditorGUILayout.PropertyField(introductionLineFormat);
         }
+        EditorGUILayout.LabelField("Cursor Settings", EditorStyles.boldLabel);
+        EditorGUILayout.PropertyField(sphereCursorRenderer);
+        EditorGUILayout.PropertyField(conversationEndColor);
 
         EditorGUILayout.Space();
         

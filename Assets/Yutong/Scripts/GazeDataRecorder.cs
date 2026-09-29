@@ -103,9 +103,21 @@ public class GazeDataRecorder : MonoBehaviour
 
         if (Physics.Raycast(ray, out hit, maxDistance, layerMask))
         {
-            if (hit.collider.CompareTag(agentTag) || hit.collider.CompareTag(wallTag))
+            if (hit.collider.CompareTag(wallTag))
             {
                 hitTarget = hit.collider.gameObject;
+            }
+            else
+            {
+                var agentComp = hit.collider.GetComponentInParent<ConversationalAgent>();
+                if (agentComp != null)
+                {
+                    hitTarget = agentComp.gameObject;
+                }
+                else if (hit.collider.CompareTag(agentTag))
+                {
+                    hitTarget = hit.collider.gameObject;
+                }
             }
         }
 
@@ -200,12 +212,13 @@ public class GazeDataRecorder : MonoBehaviour
         string tID = target.name;
         string tName = target.name;
 
-        if (target.CompareTag(agentTag))
+        var agt = target.GetComponent<ConversationalAgent>();
+        if (agt == null) agt = target.GetComponentInParent<ConversationalAgent>();
+        if (agt == null) agt = target.GetComponentInChildren<ConversationalAgent>();
+
+        if (agt != null || target.CompareTag(agentTag))
         {
             tType = "Avatar";
-            // Check ConversationalAgent component
-            var agt = target.GetComponentInParent<ConversationalAgent>();
-            if (agt == null) agt = target.GetComponentInChildren<ConversationalAgent>();
 
             if (agt != null)
             {
@@ -299,13 +312,15 @@ public class GazeDataRecorder : MonoBehaviour
         }
 
         string fileName = "";
+        string timestamp = System.DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+
         if (!string.IsNullOrEmpty(sequenceName))
         {
-            fileName = $"{sequenceName}_{participantID}.csv";
+            fileName = $"{sequenceName}_{participantID}_{timestamp}.csv";
         }
         else
         {
-            fileName = $"{_currentCondition}_{participantID}.csv";
+            fileName = $"{_currentCondition}_{participantID}_{timestamp}.csv";
         }
 
         string fullPath = ResolveSchemaSafePath(folderPath, fileName);
