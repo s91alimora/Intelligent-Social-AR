@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
@@ -15,9 +16,23 @@ public class MasterLevelController : MonoBehaviour
         Sequence_4_iAA_nAT_nAA_iAT
     }
 
+    [Serializable]
+    public class AvatarTeam
+    {
+        public string teamName;
+        [Tooltip("Exactly 4 prefabs (2M + 2F). List order is the fixed casting: element 0 -> agent_1, 1 -> agent_2, etc.")]
+        public List<GameObject> members = new();
+    }
+
     [Header("Study Flow")]
     public string participantID = "test";
     public StudySequence studySequence = StudySequence.Sequence_1_nAT_nAA_iAT_iAA;
+
+    [Header("Avatar Teams (fixed per trial position)")]
+    [Tooltip("Team at index k is used for trial position k+1 in EVERY sequence (Team A always first, B second, ...). " +
+             "Because condition order rotates across the four sequences, each team meets each condition exactly once " +
+             "across sequences - avatar identity is counterbalanced against condition by construction.")]
+    public List<AvatarTeam> avatarTeams = new();
 
     [Header("Scene Names")]
     public string iAA_SceneName = "testbed iAA";
@@ -47,8 +62,87 @@ public class MasterLevelController : MonoBehaviour
 
     private void Start()
     {
+        ValidateAvatarTeams();
         GenerateTrialBlocks();
         LoadConditionScene(0);
+    }
+
+    // Set once by ValidateAvatarTeams; team lookup is all-or-nothing so a single bad team can never
+    // produce a mixed team/random session (which would break the each-avatar-seen-once guarantee).
+    private bool _avatarTeamsValid;
+
+    private void ValidateAvatarTeams()
+    {
+        _avatarTeamsValid = false;
+
+        if (avatarTeams == null || avatarTeams.Count == 0)
+        {
+            Debug.LogWarning("[MasterLevelController] No avatar teams assigned - SessionController will fall back to random avatar selection. " +
+                             "Use Tools/iXR/Assign Proposed Avatar Teams to populate them.");
+            return;
+        }
+
+        bool valid = avatarTeams.Count == 4;
+        if (!valid)
+            Debug.LogError($"[MasterLevelController] Expected 4 avatar teams, found {avatarTeams.Count}.");
+
+        var seen = new HashSet<GameObject>();
+        for (int i = 0; i < avatarTeams.Count; i++)
+        {
+            var team = avatarTeams[i];
+            if (team == null || team.members == null || team.members.Count != 4 || team.members.Any(m => m == null))
+            {
+                Debug.LogError($"[MasterLevelController] Avatar team {i} ('{team?.teamName}') must have exactly 4 non-null members.");
+                valid = false;
+                continue;
+            }
+            foreach (var m in team.members)
+            {
+                if (!seen.Add(m))
+                {
+                    Debug.LogError($"[MasterLevelController] Avatar '{m.name}' appears in more than one team - each avatar must belong to exactly one team.");
+                    valid = false;
+                }
+            }
+        }
+
+        _avatarTeamsValid = valid;
+        if (!valid)
+            Debug.LogError("[MasterLevelController] Avatar team configuration is INVALID - team lookup is disabled for ALL conditions " +
+                           "and SessionController will fall back to random selection. Fix the teams before running a study.");
+    }
+
+    /// <summary>
+    /// Fixed lookup: the team for the CURRENT trial position (condition block index).
+    /// Team order does NOT rotate across sequences - Team A is always trial 1, Team B trial 2, etc.
+    /// Condition order DOES rotate across the four sequences, so every team meets every condition
+    /// exactly once across sequences (counterbalanced, never confounded with condition).
+    /// Returns null if teams are not (fully) configured, so callers can fall back.
+    /// </summary>
+    public List<GameObject> GetTeamForCurrentCondition()
+    {
+        if (!_avatarTeamsValid) return null;
+        if (_currentConditionIndex < 0 || _currentConditionIndex >= 4) return null;
+        return avatarTeams[_currentConditionIndex].members;
+    }
+
+    public string GetCurrentTeamName()
+    {
+        if (!_avatarTeamsValid) return "";
+        if (_currentConditionIndex < 0 || _currentConditionIndex >= 4) return "";
+        return avatarTeams[_currentConditionIndex].teamName ?? "";
+    }
+
+    public int CurrentConditionIndex => _currentConditionIndex;
+
+    /// <summary>
+    /// The condition this master intends for the currently loaded scene. SessionController verifies
+    /// its own serialized studyCondition against this so a wrong scene name or wrong enum fails loudly
+    /// instead of silently running (and logging) the wrong condition.
+    /// </summary>
+    public SessionController.StudyCondition GetExpectedCondition()
+    {
+        return GetConditionForIndex(Mathf.Clamp(_currentConditionIndex, 0, 3));
     }
 
     private void Update()
@@ -92,7 +186,7 @@ public class MasterLevelController : MonoBehaviour
         for (int scriptIndex = 0; scriptIndex < 4; scriptIndex++)
         {
             var qList = new List<int> { 1, 2, 3, 4 };
-            qList = qList.OrderBy(x => Random.value).ToList();
+            qList = qList.OrderBy(x => UnityEngine.Random.value).ToList();
             shuffledQuestionsPerScript.Add(qList);
         }
 
@@ -108,7 +202,7 @@ public class MasterLevelController : MonoBehaviour
             }
 
             // Shuffle the order of the 4 trials inside this specific condition block
-            block = block.OrderBy(x => Random.value).ToList();
+            block = block.OrderBy(x => UnityEngine.Random.value).ToList();
             _conditionTrialBlocks.Add(block);
         }
     }
@@ -137,6 +231,10 @@ public class MasterLevelController : MonoBehaviour
             Debug.LogError($"[MasterLevelController] Scene name for {targetCondition} is empty!");
             return;
         }
+
+        // Free all cached TTS audio from the previous condition (scripts differ per block, so
+        // nothing carries over; without this the static cache pins 100+ MB of PCM by session end).
+        CrossPlatformTTS.ClearCache();
 
         Debug.Log($"[MasterLevelController] -> Loading target condition {targetCondition} at scene '{sceneToLoad}'");
         SceneManager.LoadScene(sceneToLoad);

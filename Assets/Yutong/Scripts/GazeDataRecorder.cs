@@ -27,6 +27,7 @@ public class GazeDataRecorder : MonoBehaviour
     {
         public string Sequence;
         public string Condition;
+        public string Team;
         public string Phase;
         public string TrialScript;
         public int QuestionNum;
@@ -41,6 +42,7 @@ public class GazeDataRecorder : MonoBehaviour
 
     // Current Trial Info
     private string _currentCondition = "";
+    private string _currentTeam = "";
     private string _currentScript = "";
     private int _currentQuestion = 0;
     private string _currentPhase = "";
@@ -62,11 +64,12 @@ public class GazeDataRecorder : MonoBehaviour
         if (raySource == null && mainCamera != null) raySource = mainCamera.transform;
     }
 
-    public void StartRecording(string condition, string scriptName, int questionNum, string phase)
+    public void StartRecording(string condition, string scriptName, int questionNum, string phase, string team = "")
     {
         ForceEndCurrentFixation();
 
         _currentCondition = condition;
+        _currentTeam = team;
         _currentScript = scriptName;
         _currentQuestion = questionNum;
         _currentPhase = phase;
@@ -240,6 +243,7 @@ public class GazeDataRecorder : MonoBehaviour
         {
             Sequence = "", // Will be filled perfectly during WriteDataToCSV
             Condition = _currentCondition,
+            Team = _currentTeam,
             Phase = _currentPhase,
             TrialScript = _currentScript,
             QuestionNum = _currentQuestion,
@@ -251,6 +255,49 @@ public class GazeDataRecorder : MonoBehaviour
 
         _recordedData.Add(entry);
         Debug.Log($"[GazeDataRecorder] Logged fixation on {tName} for {duration:F2}s (Phase: {_currentPhase})");
+    }
+
+    // The column layout is defined ONCE here: the header is joined from CsvColumnNames and every row
+    // comes from CsvRow in the same order. If you add a column, change both together - they are
+    // adjacent precisely so they cannot drift apart unnoticed.
+    private static readonly string[] CsvColumnNames =
+    {
+        "ParticipantID", "Sequence", "Condition", "Team", "TrialScript", "QuestionNum",
+        "Phase", "TargetType", "TargetID", "TargetName", "FixationDuration"
+    };
+
+    private static string CsvHeader => string.Join(",", CsvColumnNames);
+
+    private static string[] CsvRow(string participantID, string seq, GazeDataEntry e) => new[]
+    {
+        participantID, seq, e.Condition, e.Team, e.TrialScript, e.QuestionNum.ToString(),
+        e.Phase, e.TargetType, e.TargetID, e.TargetName, e.FixationDuration.ToString("F3")
+    };
+
+    /// <summary>
+    /// Returns a path whose header (if the file already exists) matches the current schema.
+    /// Tries the base name, then a "_v2" sibling; if both exist with foreign headers, falls back
+    /// to a timestamped file - rows are never appended under a mismatched header.
+    /// </summary>
+    private string ResolveSchemaSafePath(string folderPath, string fileName)
+    {
+        string baseName = Path.GetFileNameWithoutExtension(fileName);
+        string[] candidates =
+        {
+            Path.Combine(folderPath, fileName),
+            Path.Combine(folderPath, baseName + "_v2.csv"),
+        };
+
+        foreach (string candidate in candidates)
+        {
+            if (!File.Exists(candidate)) return candidate;
+            string firstLine;
+            using (var reader = new StreamReader(candidate)) firstLine = reader.ReadLine();
+            if (firstLine == CsvHeader) return candidate;
+            Debug.LogWarning($"[GazeDataRecorder] {candidate} uses a different column layout; trying the next filename.");
+        }
+
+        return Path.Combine(folderPath, $"{baseName}_{System.DateTime.Now:yyyyMMdd_HHmmss}.csv");
     }
 
     public void WriteDataToCSV(string participantID, string sequenceName)
@@ -276,7 +323,7 @@ public class GazeDataRecorder : MonoBehaviour
             fileName = $"{_currentCondition}_{participantID}_{timestamp}.csv";
         }
 
-        string fullPath = Path.Combine(folderPath, fileName);
+        string fullPath = ResolveSchemaSafePath(folderPath, fileName);
         bool fileExists = File.Exists(fullPath);
 
         // Build CSV content
@@ -284,17 +331,14 @@ public class GazeDataRecorder : MonoBehaviour
         {
             if (!fileExists)
             {
-                // Write Header
-                writer.WriteLine("ParticipantID,Sequence,Condition,TrialScript,QuestionNum,Phase,TargetType,TargetID,TargetName,FixationDuration");
+                writer.WriteLine(CsvHeader);
             }
 
+            // Fallback sequence if needed
+            string seq = string.IsNullOrEmpty(sequenceName) ? "Standalone" : sequenceName;
             foreach (var entry in _recordedData)
             {
-                // Fallback sequence if needed
-                string seq = string.IsNullOrEmpty(sequenceName) ? "Standalone" : sequenceName;
-                
-                string line = $"{participantID},{seq},{entry.Condition},{entry.TrialScript},{entry.QuestionNum},{entry.Phase},{entry.TargetType},{entry.TargetID},{entry.TargetName},{entry.FixationDuration:F3}";
-                writer.WriteLine(line);
+                writer.WriteLine(string.Join(",", CsvRow(participantID, seq, entry)));
             }
         }
 
