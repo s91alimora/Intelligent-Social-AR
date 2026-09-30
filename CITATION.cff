@@ -1,14 +1,35 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
+type: software
+title: "Intelligent-Social-AR: A Mixed-Reality Testbed for Studying Augmented Focus Group Moderation"
+abstract: >-
+  A Unity testbed for Meta Quest mixed reality in which a human moderator
+  runs a simulated focus group with four scripted, embodied virtual agents.
+  It implements a 2x2 within-subjects study (AR augmentations present or
+  absent, crossed with a traditional table or an opinion-grid seating
+  method), with counterbalanced condition order, fixed avatar teams,
+  local neural text-to-speech, and head-gaze logging.
 authors:
-- family-names: "YOUR_NAME_HERE"
-  given-names: "YOUR_NAME_HERE"
-  orcid: "https://orcid.org/0000-0000-0000-0000"
-- family-names: "Lisa"
-  given-names: "Mona"
-  orcid: "https://orcid.org/0000-0000-0000-0000"
-title: "Intelligent-Social-AR"
-version: 1.0.0
-doi: 10.5281/zenodo.1234
-date-released: 2026-09-29
+  - family-names: "Alimoradi"
+    given-names: "Saeid"
+    affiliation: "Virginia Tech"
+  - given-names: "Yutong"
+    alias: "ryutong"
+    affiliation: "Virginia Tech"
+  - family-names: "Walker"
+    given-names: "Jasmine"
+    affiliation: "Virginia Tech"
+repository-code: "https://github.com/s91alimora/Intelligent-Social-AR"
 url: "https://github.com/s91alimora/Intelligent-Social-AR"
+license: Apache-2.0
+keywords:
+  - mixed reality
+  - augmented reality
+  - human-computer interaction
+  - focus groups
+  - virtual agents
+  - user study
+  - Unity
+  - Meta Quest
+version: 1.0.0
+date-released: 2026-09-29
