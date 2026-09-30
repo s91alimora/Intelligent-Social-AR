@@ -126,7 +126,7 @@ Assets/
 │   ├── Prefabs/Avatars/     # The 16 study avatars (Male/, Female/)
 │   ├── Animation/           # Talking and idle animator controllers
 │   ├── Models/              # Table model; Rocketbox avatars with custom import settings
-│   ├── Materials/, Shaders/, Audio/
+│   └── Materials/, Shaders/
 ├── Avatars/                 # Microsoft Rocketbox avatars and animations
 ├── Resources/Manuscripts/   # Per-condition study scripts
 └── StreamingAssets/

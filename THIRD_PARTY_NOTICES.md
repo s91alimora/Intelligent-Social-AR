@@ -44,6 +44,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+### Round table model
+
+`Assets/Testbed/Models/mesa_interna_redonda__round_table.glb`, used in the table conditions.
+
+"[Mesa Interna Redonda | Round Table](https://sketchfab.com/3d-models/mesa-interna-redonda-round-table-f6a20101837844d8a89a0d5204cc514e)" by [Pollymeowth](https://sketchfab.com/pollymeowth42), licensed under [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/).
+
+### Mixamo animation
+
+`Assets/Testbed/Animation/Breathing Idle.fbx`, the idle animation used by the avatars, comes from [Mixamo](https://www.mixamo.com/) (Adobe). It is included as part of this project under Adobe's terms, which do not permit redistributing Mixamo animations as standalone files. Download it from Mixamo if you need it for another project.
+
 ### Oculus LipSync
 
 `Assets/Oculus/LipSync/`. Licensed under the **Oculus Audio SDK License Version 3.3**: <https://developers.meta.com/horizon/licenses/audio-3.2.2/>
