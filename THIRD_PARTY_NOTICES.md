@@ -71,7 +71,7 @@ Copyright © Facebook Technologies, LLC and its affiliates. All rights reserved.
 
 ## Components downloaded by `Tools/Setup-TTS.ps1`
 
-These are **not** stored in this repository. The setup script downloads them from their official distributors into `Assets/StreamingAssets/tts/piper/win/`, and git ignores them.
+These are **not** stored in this repository. The setup script downloads them from the official Piper release into `Assets/StreamingAssets/tts/piper/win/`, and git ignores them.
 
 | Component | License | Source |
 |---|---|---|
@@ -86,31 +86,16 @@ eSpeak NG is distributed under the GNU General Public License version 3 or later
 
 ## Voice models
 
-Downloaded from [rhasspy/piper-voices](https://huggingface.co/rhasspy/piper-voices) at revision `c10ece1`. Each model carries the license of the dataset it was trained on. **Some are restricted to non-commercial or research use**; check the table before reusing a voice outside this study.
+No voice models are included in this repository. The voices you install with `Tools/Setup-TTS.ps1` (from your own `Tools/voices.json`) are governed by their own licenses.
 
-| Avatar voice | Official model | Training data | License |
-|---|---|---|---|
-| Bryce | `en_US-bryce-medium` | LibriVox recordings | Public domain |
-| Cori | `en_GB-cori-high` | LibriVox recordings | Public domain |
-| John | `en_US-john-medium` | LibriVox recordings | Public domain |
-| Kristin | `en_US-kristin-medium` | LibriVox recordings | Public domain |
-| Norman | `en_US-norman-medium` | LibriVox recordings | Public domain |
-| Layla | `en_US-ljspeech-high` | LJ Speech | Public domain |
-| Joe | `en_US-joe-medium` | OHF voice-datasets | CC0 |
-| Kathleen | `en_US-kathleen-low` | dataset-voice-kathleen | CC0 |
-| Alba | `en_GB-alba-medium` | University of Edinburgh DataShare | CC BY 4.0 (attribution required) |
-| Jenny | `en_GB-jenny_dioco-medium` | Jenny TTS Dataset (Dioco) | Dioco attribution license; credit the voice as **"Jenny (Dioco)"** |
-| Arctic | `en_US-arctic-medium` | CMU ARCTIC | CMU ARCTIC license (see <http://www.festvox.org/cmu_arctic/>) |
-| Ryan | `en_US-ryan-high` | RyanSpeech | **CC BY-NC-SA 4.0: non-commercial only** |
-| Lessac | `en_US-lessac-medium` | Lessac Blizzard 2013 | **Research use only; no commercial use or redistribution** |
-| Alan | `en_GB-northern_english_male-medium` | OpenSLR 83 | CC BY-SA 4.0; **fine-tuned from the Lessac voice** |
+Piper voices published at [rhasspy/piper-voices](https://huggingface.co/rhasspy/piper-voices) each carry the license of the dataset they were trained on, stated in the voice's `MODEL_CARD`. Licenses vary widely, for example:
 
-Voice model notes:
+- **Public domain or CC0:** many voices trained on LibriVox or similar recordings.
+- **Attribution required:** e.g. CC BY 4.0 datasets, or voices whose license asks you to credit the speaker by name.
+- **Non-commercial:** e.g. voices trained on CC BY-NC-SA datasets.
+- **Research use only, no redistribution:** e.g. voices trained on the Lessac Blizzard 2013 data (<https://www.cstr.ed.ac.uk/projects/blizzard/2013/lessac_blizzard2013/license.html>), and voices fine-tuned from them.
 
-- **Lessac.** The Blizzard 2013 license permits research use only and prohibits redistribution without written permission; see <https://www.cstr.ed.ac.uk/projects/blizzard/2013/lessac_blizzard2013/license.html>. The Alan voice was fine-tuned from the Lessac model and may carry the same restrictions.
-- **Ryan.** RyanSpeech is licensed CC BY-NC-SA 4.0 and may not be used commercially.
-- **Configuration files.** The `*.onnx.json` configuration files in `Assets/StreamingAssets/tts/piper/win/voices/` are included in this repository because two were adjusted for the study (Jenny uses US-English phonemes). They describe the models and contain no voice data.
-- **Amy and Tony.** Two study voices (`amy.onnx`, `tony.onnx`) have no verified official source and are **not distributed** with this project. See the README's *Known limitations*.
+Check the model card of every voice before using it, especially for anything beyond research, and don't commit voice models to a public repository unless their license allows redistribution.
 
 ---
 

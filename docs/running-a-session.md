@@ -5,6 +5,7 @@ A checklist for the experimenter ("wizard") who runs a participant through all f
 ## Before the participant arrives
 
 - [ ] Unity 2022.3.42f1 is open with the project, and `Tools\Setup-TTS.ps1` has been run on this computer.
+- [ ] The four manuscripts (`Assets/Resources/Manuscripts/iAA.json`, `iAT.json`, `nAA.json`, `nAT.json`) and their augmentation images are in place.
 - [ ] The Quest 3 is charged, connected with **Quest Link**, and Unity shows the headset as the active XR device.
 - [ ] **Meta XR Simulator is deactivated** (*Meta → Meta XR Simulator → Deactivate*). While it is active, the app runs in the simulator instead of the headset.
 - [ ] In each of the four `Testbed` scenes, **Is Test Mode** is off on the SessionController. The wall shows `[TEST MODE]` if it is on.
@@ -52,7 +53,7 @@ After the fourth question the Console logs `Experiment Finished`. Press **T** to
 
 | Symptom | Likely cause |
 |---|---|
-| An avatar moves its mouth but makes no sound | Its voice model is missing; run `Tools\Setup-TTS.ps1`. Amy and Tony have no public voice file yet (see the README). |
+| An avatar moves its mouth but makes no sound | Its voice model is missing: add it to `Tools/voices.json` and run `Tools\Setup-TTS.ps1`, and check the avatar's **Model File Name** (see the README, *Adding voices*). |
 | The headset stays black | Quest Link is not active, or the Meta XR Simulator is still activated. |
 | `CONDITION MISMATCH` in the Console | A scene-name field on MasterLevelController points to the wrong scene, or a scene's Study Condition is wrong. |
 | Pressing T does nothing | The current condition has not finished all four questions. |

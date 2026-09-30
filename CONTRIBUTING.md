@@ -23,7 +23,7 @@ See the [README](README.md) for requirements and the [docs](docs/) for how the t
 
 - **Participant data.** Anything in `Assets/Logs/` (gaze CSVs). Never commit study data.
 - **Personal editor state.** `UserSettings/`, `Library/`, `Logs/`, `Temp/`.
-- **Downloaded components.** The Piper runtime and voice models; they come from `Tools\Setup-TTS.ps1`.
+- **Downloaded components and study materials.** The Piper runtime, voice models and `Tools/voices.json`, as well as manuscripts and augmentation images. Each lab keeps its own locally.
 - **Assets without a clear license.** Add any new third-party asset, model or library to [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md), and only if its license allows redistribution.
 
 ## Changes that affect the study
