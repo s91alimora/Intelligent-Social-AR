@@ -76,6 +76,19 @@ crashlytics-build.properties
 # Local debugging screenshots
 /errors/
 
+# Text-to-speech runtime and voice models, downloaded by Tools/Setup-TTS.ps1
+# (not redistributed here for licensing reasons; see THIRD_PARTY_NOTICES.md).
+# The voices' *.onnx.json configuration files ARE tracked.
+/Assets/StreamingAssets/tts/piper/win/*.exe
+/Assets/StreamingAssets/tts/piper/win/*.exe.meta
+/Assets/StreamingAssets/tts/piper/win/*.dll
+/Assets/StreamingAssets/tts/piper/win/*.dll.meta
+/Assets/StreamingAssets/tts/piper/win/espeak-ng-data/
+/Assets/StreamingAssets/tts/piper/win/espeak-ng-data.meta
+/Assets/StreamingAssets/tts/piper/win/voices/*.onnx
+/Assets/StreamingAssets/tts/piper/win/voices/*.onnx.meta
+/Assets/StreamingAssets/tts/piper/win/voices/*.part
+
 # OS files
 .DS_Store
 Thumbs.db

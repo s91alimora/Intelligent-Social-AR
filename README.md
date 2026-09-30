@@ -48,21 +48,30 @@ Each condition begins with the agents introducing themselves. Every question the
 | **Headset** | Meta Quest 3, connected to the PC with **Quest Link** (USB-C or Air Link) |
 | **PC** | Windows 10/11; the bundled Piper TTS runtime is Windows-only |
 | **Packages** | Meta XR All-in-One SDK 205.0.0 (resolved automatically from `Packages/manifest.json`) |
-| **Git** | [Git LFS](https://git-lfs.com/), used for the voice models |
+| **Internet** | Needed once, to download the text-to-speech runtime and voices (about 1.1 GB) |
 | **Optional** | Meta XR Simulator v205 for testing without a headset |
 
 The study runs from the Unity Editor over Quest Link. Standalone (untethered) Quest builds are not supported yet: speech would need to be pre-baked and gaze data would need a writable path on the device.
 
 ## Getting started
 
-```bash
-git lfs install
-git clone https://github.com/s91alimora/Intelligent-Social-AR.git
-```
+1. Clone the repository:
 
-1. Open the project in Unity 2022.3.42f1. The first import takes a while.
-2. Connect the Quest over Link and confirm Unity sees it (Meta XR SDK prompts in the Project Setup Tool).
-3. Open `Assets/Yutong/Scenes/Mater Level Control.unity`, the entry scene.
+   ```bash
+   git clone https://github.com/s91alimora/Intelligent-Social-AR.git
+   ```
+
+2. Download the text-to-speech runtime and voices. From the repository folder, in PowerShell:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File Tools\Setup-TTS.ps1
+   ```
+
+   The script fetches [Piper](https://github.com/rhasspy/piper) and the study's voice models from their official sources and verifies every file's checksum. They are not stored in this repository because several voices' licenses don't allow redistribution (see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)). It is safe to run again.
+
+3. Open the project in Unity 2022.3.42f1. The first import takes a while.
+4. Connect the Quest over Link and confirm Unity sees it (Meta XR SDK prompts in the Project Setup Tool).
+5. Open `Assets/Yutong/Scenes/Mater Level Control.unity`, the entry scene.
 
 ## Running a session
 
@@ -119,13 +128,16 @@ Assets/
 ├── Resources/Manuscripts/   # Per-condition study scripts
 └── StreamingAssets/
     ├── Augmentation Images/ # AR chart images
-    └── tts/                 # Piper runtime and voice models
+    └── tts/                 # Voice configs (tracked); Piper runtime and models (downloaded)
 Packages/                    # Unity package manifest (Meta XR SDK 205)
 ProjectSettings/             # Unity project and build settings
+Tools/                       # Setup-TTS.ps1: downloads the text-to-speech runtime and voices
 ```
 
 ## Known limitations
 
+- **Two voices are not yet distributable.** The Amy and Tony voices used in the study have no verified official source, so the setup script cannot download them, and those two avatars stay silent in a fresh clone. They will be replaced or documented in a future update.
+- Some voices are licensed for non-commercial or research use only; see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md#voice-models) before reusing them.
 - Windows only; the TTS engine runs as a local process.
 - Standalone Quest builds are not supported (see [Requirements](#requirements)). *Tools → iXR → Bake All Session Audio* pre-renders speech for one voice only.
 - Gaze is approximated by head orientation.
