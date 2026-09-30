@@ -1021,41 +1021,6 @@ public class SessionController : MonoBehaviour
         };
     }
 
-    // --- Legacy / Debug Support ---
-    public void InitializeFromJsonPath(string path)
-    {
-        if (string.IsNullOrEmpty(path)) return;
-        InitializeFromJsonText(System.IO.File.ReadAllText(path));
-    }
-
-    public void InitializeFromJsonText(string json)
-    {
-        // For debugging: Load this single script as a 1-trial experiment
-        // Only if we are not already running a full experiment? 
-        // Or just overwrite.
-        StopAllCoroutines();
-        _trialSequence.Clear();
-        _currentTrialIndex = 0;
-        
-        // Wrap as text asset? No, we parsed strings.
-        // We need to change _trialSequence to support raw strings or TextAssets.
-        // But _trialSequence uses (TextAsset, int).
-        
-        // Hack: Create a dummy TextAsset or just parse immediately and injection?
-        // Let's change the internal logic to store Data Objects instead of TextAssets?
-        // Actually, ParseQuestionData takes TextAsset, but passing a string is cleaner if we duplicate logic.
-        
-        // Let's just ignore the "TextAsset" part and parse directly here?
-        // But StartTrial needs to pull from _trialSequence.
-        
-        // Better fix: Make ParseQuestionData take string instead of TextAsset.
-        // Then _trialSequence can be (string content, int qIndex).
-        
-        // See Step 2 refactor below. For now, I'll log that this is not fully supported 
-        // OR I will refactor ParseQuestionData to take string.
-        Debug.LogWarning("Runtime loading of single JSON is not fully supported in iAA mode yet. Ignored.");
-    }
-
     // --- Helpers ---
 
     private QuestionData ParseQuestionData(TextAsset jsonFile, int qIndex)
