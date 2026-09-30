@@ -15,7 +15,7 @@ A clear description of the problem.
 3. ...
 
 **Environment**
-- Condition / scene: (e.g. Testbed iAA, or Mater Level Control with Sequence_2)
+- Condition / scene: (e.g. Testbed iAA, or Master Level Control with Sequence_2)
 - Headset over Quest Link, or Meta XR Simulator:
 - Unity version: (should be 2022.3.42f1)
 

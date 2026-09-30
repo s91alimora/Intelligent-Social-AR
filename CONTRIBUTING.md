@@ -6,7 +6,7 @@ Thanks for helping improve Intelligent-Social-AR. This project is research softw
 
 1. Install **Unity 2022.3.42f1** with Android Build Support (OpenJDK, Android SDK & NDK Tools). Use exactly this version; other versions re-serialize assets and create noisy diffs.
 2. Clone the repository and run `Tools\Setup-TTS.ps1` to download the text-to-speech runtime and voices.
-3. Open the project and start from `Assets/Yutong/Scenes/Mater Level Control.unity`.
+3. Open the project and start from `Assets/Testbed/Scenes/Master Level Control.unity`.
 
 See the [README](README.md) for requirements and the [docs](docs/) for how the testbed works.
 

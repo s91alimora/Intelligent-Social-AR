@@ -15,7 +15,7 @@ This file is provided for information and is not legal advice. Licenses were che
 
 ### Microsoft Rocketbox avatars
 
-`Assets/Avatars/`, `Assets/Jasmine/RocketBox/`. Source: <https://github.com/microsoft/Microsoft-Rocketbox>
+`Assets/Avatars/`, `Assets/Testbed/Models/RocketboxCustomized/`. Source: <https://github.com/microsoft/Microsoft-Rocketbox>
 
 If you use these avatars in research, the Rocketbox authors ask you to cite:
 Gonzalez-Franco, M., et al. (2020). *The Rocketbox Library and the Utility of Freely Available Rigged Avatars.* Frontiers in Virtual Reality, 1, 561558. <https://doi.org/10.3389/frvir.2020.561558>

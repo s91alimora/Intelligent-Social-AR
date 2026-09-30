@@ -6,7 +6,7 @@ using UnityEngine;
 
 /// <summary>
 /// Assigns the proposed avatar team partition to the MasterLevelController in the open scene
-/// (use in "Mater Level Control" scene). The partition was derived from an acoustic analysis of
+/// (use in "Master Level Control" scene). The partition was derived from an acoustic analysis of
 /// all bundled Piper voices (calibration passage, 2026-08): teams are matched on median pitch (F0),
 /// pitch variability, and accent (one British voice per team), with 2M+2F per team. Speaking rate
 /// is equalized via per-prefab lengthScale calibration and loudness via runtime RMS normalization
@@ -18,7 +18,7 @@ using UnityEngine;
 /// </summary>
 public static class AvatarTeamTools
 {
-    private const string AvatarRoot = "Assets/Yutong/Prefabs/Avatars/";
+    private const string AvatarRoot = "Assets/Testbed/Prefabs/Avatars/";
 
     // Casting order (element i -> agent_{i+1}) alternates by team: A/C are M,F,M,F and B/D are
     // F,M,F,M, so each agent slot is voiced by 2 male + 2 female avatars across a session -
@@ -38,7 +38,7 @@ public static class AvatarTeamTools
         if (master == null)
         {
             EditorUtility.DisplayDialog("Assign Avatar Teams",
-                "No MasterLevelController found in the open scene.\nOpen 'Mater Level Control' and try again.", "OK");
+                "No MasterLevelController found in the open scene.\nOpen 'Master Level Control' and try again.", "OK");
             return;
         }
 

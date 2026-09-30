@@ -1,12 +1,12 @@
 # Architecture
 
-How the testbed's main components fit together. All study scripts are in `Assets/Yutong/Scripts/`.
+How the testbed's main components fit together. All study scripts are in `Assets/Testbed/Scripts/`.
 
 ## Scene flow
 
 ```mermaid
 flowchart LR
-    M["Mater Level Control<br/>MasterLevelController"] -->|loads, in sequence order| S1["Testbed scene<br/>(condition 1)"]
+    M["Master Level Control<br/>MasterLevelController"] -->|loads, in sequence order| S1["Testbed scene<br/>(condition 1)"]
     S1 -->|T key| S2["condition 2"] --> S3["condition 3"] --> S4["condition 4"]
 ```
 

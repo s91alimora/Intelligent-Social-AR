@@ -71,7 +71,7 @@ The study runs from the Unity Editor over Quest Link. Standalone (untethered) Qu
 
 3. Open the project in Unity 2022.3.42f1. The first import takes a while.
 4. Connect the Quest over Link and confirm Unity sees it (Meta XR SDK prompts in the Project Setup Tool).
-5. Open `Assets/Yutong/Scenes/Mater Level Control.unity`, the entry scene.
+5. Open `Assets/Testbed/Scenes/Master Level Control.unity`, the entry scene.
 
 ## Running a session
 
@@ -118,12 +118,15 @@ Gaze is **head gaze** (a ray from the headset's forward direction), not eye trac
 
 ```
 Assets/
-├── Yutong/
-│   ├── Scripts/             # Study logic: session flow, agents, TTS, gaze logging, grid, MRUK
-│   │   └── Editor/          # Custom inspectors and editor tools
-│   ├── Scenes/              # Mater Level Control (entry) + Testbed iAA / iAT / nAA / nAT
-│   └── Prefabs/Avatars/     # The 16 study avatars (Male/, Female/)
-├── Jasmine/                 # Avatar import, blinking and lip-sync setup
+├── Testbed/
+│   ├── Scripts/             # Study logic: session flow, agents, TTS, gaze logging, grid, blinking
+│   │   └── Editor/          # Custom inspectors, avatar-team and import tools
+│   ├── Scenes/              # Master Level Control (entry) + Testbed iAA / iAT / nAA / nAT
+│   │   └── Prototypes/      # Development scenes (lip sync, head-ray interaction, MRUK)
+│   ├── Prefabs/Avatars/     # The 16 study avatars (Male/, Female/)
+│   ├── Animation/           # Talking and idle animator controllers
+│   ├── Models/              # Table model; Rocketbox avatars with custom import settings
+│   ├── Materials/, Shaders/, Audio/
 ├── Avatars/                 # Microsoft Rocketbox avatars and animations
 ├── Resources/Manuscripts/   # Per-condition study scripts
 └── StreamingAssets/

@@ -1,7 +1,7 @@
 ## What this changes
 
 ## How it was tested
-- [ ] Ran from `Mater Level Control` in the Editor (headset or Meta XR Simulator)
+- [ ] Ran from `Master Level Control` in the Editor (headset or Meta XR Simulator)
 - [ ] No new errors or warnings in the Unity Console
 
 ## Study impact

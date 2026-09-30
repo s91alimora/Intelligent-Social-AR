@@ -12,7 +12,7 @@ A checklist for the experimenter ("wizard") who runs a participant through all f
 
 ## Setting up the session
 
-1. Open `Assets/Yutong/Scenes/Mater Level Control.unity`.
+1. Open `Assets/Testbed/Scenes/Master Level Control.unity`.
 2. Select the **MasterLevelController** object and set:
    - **Participant ID**, for example `P07`
    - **Study Sequence**, the condition order assigned to this participant
@@ -56,4 +56,4 @@ After the fourth question the Console logs `Experiment Finished`. Press **T** to
 | The headset stays black | Quest Link is not active, or the Meta XR Simulator is still activated. |
 | `CONDITION MISMATCH` in the Console | A scene-name field on MasterLevelController points to the wrong scene, or a scene's Study Condition is wrong. |
 | Pressing T does nothing | The current condition has not finished all four questions. |
-| Random avatars instead of the team | Play was started from a `Testbed` scene instead of `Mater Level Control`. |
+| Random avatars instead of the team | Play was started from a `Testbed` scene instead of `Master Level Control`. |
