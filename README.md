@@ -1,15 +1,17 @@
 # Intelligent-Social-AR
 
-**A mixed-reality testbed for studying augmented focus group moderation.**
+**Intelligent Augmented Reality as a Cognitive Assistant for Facilitators of Collocated Group Interaction**
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE.md)
 ![Unity 2022.3.42f1](https://img.shields.io/badge/Unity-2022.3.42f1-black?logo=unity)
 ![Meta XR SDK 205](https://img.shields.io/badge/Meta_XR_SDK-205.0.0-0467DF?logo=meta)
 ![Platform: Meta Quest 3 via Link](https://img.shields.io/badge/Platform-Meta_Quest_3_(Link)-lightgrey)
 
-Intelligent-Social-AR puts a human moderator in charge of a simulated focus group. Wearing a Meta Quest headset in passthrough mixed reality, the participant moderates a discussion among four embodied virtual agents, then formulates follow-up questions. The agents speak fully scripted dialogue with local neural text-to-speech and lip sync, so every participant hears identical content. In some conditions, an AR layer shows the moderator summaries, speaking statistics and group-dynamics charts.
+Leading or moderating a group discussion splits attention across tasks that compete for the same mental resources: the leader/moderator watches the group, listens to the content, and plans the next steps at the same time. Multiple Resource Theory predicts that such competing demands degrade performance, and Cognitive Load Theory predicts that extra processing reduces the capacity left for the main task. Intelligent-Social-AR is a context-aware AR that collects data on a social situation such as group moderaltion, and augments information onto the user reality to reduce the cognitive load. To test this, we built this testbed that puts a human moderator in charge of a simulated focus group. Wearing a Meta Quest headset in passthrough mixed reality, the participant moderates a discussion among four embodied virtual agents, then formulates follow-up questions. The agents speak fully scripted dialogue with local neural text-to-speech and lip sync, so every participant hears identical content. In some conditions, an AR layer shows the moderator summaries, speaking statistics and group-dynamics charts. This version
 
-The testbed was built for a controlled user study on how **Intelligent Augmented Moderation** and the **APR** seating approach affect moderators' cognitive load, situational awareness and performance.
+The testbed was built for a controlled user study. This version is an initial design that incorporate the AI part in a Wizard-of-Oz fashion where the experimenter is in charge of the session entirely. This means that all the augmentations are pre-defined and set for each experimental conditions.
+
+The testbed has been developed in modules and each module can be refined and customized.
 
 > **Status:** research software under active development. The accompanying paper is in preparation.
 
@@ -24,10 +26,8 @@ A 2×2 within-subjects design crosses two factors:
 | **No augmentation (nA)** | `nAT` | `nAA` |
 | **Intelligent augmentation (iA)** | `iAT` | `iAA` |
 
-- **APR grid.** A 5 × 4 floor grid whose rows encode opinion, from *Very Good* (nearest row) to *Very Bad* (farthest). Before speaking, each agent walks to the row matching its stance on the question.
-- **Augmentations (iA conditions).** Group-level information is shown on the back wall; per-agent information appears above an agent when the moderator looks at it (0.3 s head-gaze dwell). iAA shows seating patterns, speaking summaries, movement and similarity charts; iAT shows turn-taking, speaking-time and dissenting-opinion statistics.
-- **Counterbalancing.** Four condition orders (a rotated Latin square) are assigned across participants. Each condition runs four questions from a compiled per-condition script, so script and question order are balanced across conditions.
-- **Avatar teams.** The 16 avatars form four fixed teams (A–D) of two male and two female voices, matched on pitch, speaking rate, loudness and accent. Team *k* always appears in trial position *k*; because condition order rotates, every team meets every condition exactly once across the four sequences.
+- **APR** Anchored Positional Responding or APR is a novel approach in running focus groups introduced by [Alimoradi et al. (2025)](https://doi.org/10.1177/10711813251361005). In the approach, participants are first required to physically position themselves within a room-sized replicated Likert Scale (as external anchors) in response to a given question prompt before responding verbally. For this testbed, a 5 × 4 floor grid whose rows encode opinion, from *Very Good* (nearest row) to *Very Bad* (farthest). Before speaking, each agent walks to the row matching its stance on the question.
+- **Augmentations** Pre-defined information and graphs derived from scripted transcripts. The augmentations are supposably information that an LLM/VLM infers from collected context. In the testbed, two type of information is augmented; group-level and individual level. Group-level contains information summarizing group interaction that are shown on the back. Individual-level contains per-agent information appears in-front of an agent when the moderator looks at it (0.3 s head-gaze dwell). iAA shows information that is extracted through APR approach; iAT shows information that corresponds with traditional focus group.
 
 Each condition begins with the agents introducing themselves. Every question then runs through the phases **Setup → (Grid move) → Discussion → Augmentations**, advanced by the experimenter.
 
