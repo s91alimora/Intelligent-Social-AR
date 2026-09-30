@@ -134,6 +134,13 @@ ProjectSettings/             # Unity project and build settings
 Tools/                       # Setup-TTS.ps1: downloads the text-to-speech runtime and voices
 ```
 
+## Documentation
+
+- [Running a study session](docs/running-a-session.md): step-by-step checklist for the experimenter
+- [Manuscript format](docs/manuscript-format.md): how to write or edit study content
+- [Architecture](docs/architecture.md): how the components fit together
+- [Contributing](CONTRIBUTING.md): setup, branching and what not to commit
+
 ## Known limitations
 
 - **Two voices are not yet distributable.** The Amy and Tony voices used in the study have no verified official source, so the setup script cannot download them, and those two avatars stay silent in a fresh clone. They will be replaced or documented in a future update.
