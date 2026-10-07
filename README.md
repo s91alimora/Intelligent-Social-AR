@@ -245,3 +245,8 @@ The project's own code is released under the [Apache License 2.0](LICENSE.md). I
 Developed at Virginia Tech by **Saeid Alimoradi**, **Yutong Ren** ([@ryutong](https://github.com/ryutong)) and **Jasmine Walker** ([@Jwalker055](https://github.com/Jwalker055)).
 
 Built with [Unity](https://unity.com/), the [Meta XR SDK](https://developers.meta.com/horizon/downloads/package/meta-xr-sdk-all-in-one-upm/), [Piper](https://github.com/rhasspy/piper), [eSpeak NG](https://github.com/espeak-ng/espeak-ng), [ONNX Runtime](https://onnxruntime.ai/) and [Microsoft Rocketbox](https://github.com/microsoft/Microsoft-Rocketbox).
+## Contributors
+
+- **Saeid Alimoradi** ([@s91alimora](https://github.com/s91alimora)) — project lead
+- **Yutong** ([@ryutong](https://github.com/ryutong)) — core development
+- **Jasmine Walker** ([@Jwalker055](https://github.com/Jwalker055)) — lip-sync and animation
