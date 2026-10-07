@@ -248,5 +248,5 @@ Built with [Unity](https://unity.com/), the [Meta XR SDK](https://developers.met
 ## Contributors
 
 - **Saeid Alimoradi** ([@s91alimora](https://github.com/s91alimora)) — project lead
-- **Yutong** ([@ryutong](https://github.com/ryutong)) — core development
+- **Yutong Ren** ([@ryutong](https://github.com/ryutong)) — core development
 - **Jasmine Walker** ([@Jwalker055](https://github.com/Jwalker055)) — lip-sync and animation
