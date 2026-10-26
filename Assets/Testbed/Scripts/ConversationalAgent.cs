@@ -89,15 +89,14 @@ public class ConversationalAgent : MonoBehaviour
             return;
         }
 
-        // Set talking state to true
-        SetTalkingState(true);
-
+// Start talking only when the voice starts. The talk clips move the jaw and lips, and a line
+        // that is not cached yet takes Piper a second or more to synthesize before it can play.
         _tts.Speak(line, () =>
         {
             // Set talking state to false when done
             SetTalkingState(false);
             onComplete?.Invoke();
-        });
+        }, onStarted: () => SetTalkingState(true));
     }
 
     void SetTalkingState(bool isTalking)

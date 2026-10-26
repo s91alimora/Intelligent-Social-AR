@@ -46,7 +46,7 @@ public class GroupAppraisalSummaries
 {
     public string speaking_Sum;
     public string grp_Move;
-    public string grp_Sim_Mat;
+    public string sim_Mat; // path of the *_Grp_Sim_Mat image (older manuscripts used "grp_Sim_Mat")
 }
 
 [Serializable]
