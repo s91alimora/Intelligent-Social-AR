@@ -31,17 +31,23 @@ A 2×2 within-subjects design crosses two factors:
 - **APR.** Anchored Positional Responding (APR) is a novel approach to running focus groups introduced by [Alimoradi et al. (2025)](https://doi.org/10.1177/10711813251361005). In this approach, participants first physically position themselves within a room-sized replicated Likert scale (as external anchors) in response to a given question prompt, before responding verbally. In this testbed, APR is a 5 × 4 floor grid whose rows encode opinion, from *Very Good* (nearest row) to *Very Bad* (farthest). Before speaking, each agent walks to the row matching its stance on the question.
 - **Augmentations.** Pre-defined information and graphs derived from scripted transcripts. The augmentations stand in for information that an LLM/VLM would infer from the collected context. Two types of information are augmented: group-level and individual-level. Group-level information summarizes the group interaction and is shown on the back wall. Individual-level information is shown in front of an agent when the moderator looks at it (0.3 s head-gaze dwell). iAA shows information extracted through the APR approach; iAT shows information that corresponds to a traditional focus group.
 
-Each condition begins with the agents introducing themselves. Every question then runs through the phases **Setup → (Grid move) → Discussion → Augmentations**, advanced by the experimenter.
+Each condition begins with the agents introducing themselves. Every question then runs as a series of steps
+advanced by the experimenter: **ready → question on the wall → discussion → review → agents return**. In the grid
+conditions the agents walk to their rows before the discussion; in the augmented conditions the augmentations are
+shown during the review.
 
 ## Features
 
 - Scripted multi-agent conversations with sequential turn-taking, driven by JSON manuscripts
 - Local neural text-to-speech with [Piper](https://github.com/rhasspy/piper): per-agent voices, adjustable speaking rate and normalized loudness; no cloud services
-- Audio-driven lip sync (Oculus LipSync) and automatic blinking on [Microsoft Rocketbox](https://github.com/microsoft/Microsoft-Rocketbox) avatars
-- Head-gaze fixation logging per trial and phase, written to CSV
-- Counterbalancing: four rotated condition orders and fixed avatar teams per trial position
-- Study-integrity checks: the scene's condition must match the planned sequence, avatar teams are validated before a session, and test mode is visibly marked
-- Experimental room alignment using Meta's MR Utility Kit (separate prototype scene)
+- Audio-driven lip sync (Oculus LipSync), automatic blinking and walking animation on [Microsoft Rocketbox](https://github.com/microsoft/Microsoft-Rocketbox) avatars
+- Mixed reality: the participant sees the real room through passthrough, and real objects in front of virtual ones occlude them (Meta Depth API)
+- Room anchoring: a one-time two-point calibration places the virtual room at the same spot in the physical room every session
+- Head-gaze fixation logging per question and phase, with hit positions, written to CSV; a gaze cursor shows exactly what is being logged
+- Two sessions of two conditions per participant, counterbalanced by a Latin square, with one avatar team per condition
+- A training mode with its own avatars and content, separate from the study
+- Crash recovery: resume a session at the condition and question that was running
+- Study-integrity checks: the scene's condition must match the planned order, avatar teams are validated before a session, earlier sessions of the same participant are detected, and the experimenter panel warns when passthrough is off or the room is not calibrated
 
 ## Requirements
 
@@ -54,7 +60,9 @@ Each condition begins with the agents introducing themselves. Every question the
 | **Internet** | Needed during setup, to download the text-to-speech runtime and voices |
 | **Optional** | [Meta XR Simulator](https://developers.meta.com/horizon/documentation/unity/xrsim-intro/) v205, to test without a headset |
 
-The testbed runs from the Unity Editor over Quest Link. Standalone (untethered) Quest builds are not supported yet: speech would need to be pre-baked and gaze data would need a writable path on the device.
+- The testbed runs from the Unity Editor over Quest Link. Standalone (untethered) Quest builds are not supported yet: speech would need to be pre-baked and gaze data would need a writable path on the device.
+- **Passthrough over Link** enabled in the Meta Horizon Link app (*Settings → Beta → Developer Runtime Features* and *Passthrough over Meta Horizon Link*). Without it the participant sees black around the virtual objects.
+- For the training content generator only: Python 3 with `matplotlib`, and the Liberation Serif font.
 
 ## Setting up the environment
 
@@ -90,7 +98,20 @@ This downloads [Piper](https://github.com/rhasspy/piper) 2023.11.14-2 from its o
 
 Before a session can run, add the content the testbed plays: [manuscripts](#adding-conversation-scripts-manuscripts), [augmentation images](#adding-augmentation-images) and [voices](#adding-voices). Without a manuscript, a condition scene stops at startup with an error naming the file it expected.
 
-### 6. Optional: test without a headset
+### 6. Calibrate the room (once per PC and play area)
+
+The study scenes place the virtual room relative to two marks on the real floor, so the grid, the table and the
+logged gaze coordinates are in the same place every session.
+
+1. Put two tape marks on the floor, **A** and **B**, at least 2 m apart, matching the *Marker A* and *Marker B* positions in the testbed scenes.
+2. Use **Stage** as the tracking origin (the scenes already do).
+3. With any testbed running, press **C**. Hold the right controller upright on mark A and pull the trigger, then do the same on mark B.
+
+The calibration is rejected if the measured A–B distance differs from the scene's by more than 5 cm. It is saved as
+`RoomCalibration.json` in Unity's `Application.persistentDataPath`, per PC and headset boundary; redo it if either
+changes. **V** shows or hides the marker discs. Until the room is calibrated, the experimenter panel shows a warning.
+
+### 7. Optional: test without a headset
 
 Install the Meta XR Simulator v205, activate it with **Meta → Meta XR Simulator → Activate**, and press Play. Deactivate it again before running sessions on the headset.
 
@@ -159,63 +180,102 @@ Voices are [Piper](https://github.com/rhasspy/piper) models (`.onnx` plus a `.on
 
 ## Running a session
 
-1. Select the **MasterLevelController** object and set:
-   - **Participant ID**, used in the CSV file names
-   - **Study Sequence**, one of the four condition orders (`Sequence_1_nAT_nAA_iAT_iAA`, `Sequence_2_nAA_iAT_iAA_nAT`, `Sequence_3_iAT_iAA_nAT_nAA`, `Sequence_4_iAA_nAT_nAA_iAT`)
-2. Make sure **Is Test Mode** is off in the four `Testbed` scenes. In test mode, introductions are skipped, discussions can be skipped, and the wall shows `[TEST MODE]`.
-3. Press **Play**. The master scene loads the first condition.
+1. Open `Assets/Testbed/Scenes/Master Level Control.unity` and press **Play**.
+2. In the setup panel (PC monitor only), enter the **participant number** and choose **Session 1 or 2**. The number selects the condition order; the panel shows it before you start. Pilot runs are saved as `PILOT_<ID>`, and only pilot runs can turn room anchoring off ("test outside the lab").
+3. Start. The first condition of the session loads.
 
 | Control | Action |
 |---|---|
-| **Space** (or right controller **A**) | Advance to the next phase |
-| **T** | Load the next condition, once all four questions are finished |
+| **Space** (or right controller **A**) | Next step |
+| **Backspace** (or the panel's Back button) | Undo the last step |
+| **T** | After the last question: first press saves and clears the room, second press loads the session's next condition or ends the session |
+| **C** | Calibrate the room (see [Calibrate the room](#6-calibrate-the-room-once-per-pc-and-play-area)) |
+| **V** | Show or hide the floor markers |
+| Left controller **X** | Participant's button in [training](#training) |
+
+If Unity or the headset crashes, press Play again, enter the same participant and session, and choose **Resume**
+with the condition and question that was running. The resumed data goes to a new folder (see [Data output](#data-output)).
 
 The full experimenter checklist is in [Running a study session](docs/running-a-session.md).
 
+## Training
+
+Each participant does a short training once, before session 1, to get used to the headset, the avatars and the
+augmentations. Open `Assets/Testbed/Scenes/Training.unity` and press **Play**. It plays one conversation in
+`Testbed iAT`, then one in `Testbed iAA`, with four training avatars whose bodies and voices the study does not
+use. The participant moves on with **X** on the left controller (Space works for the experimenter). There is no
+Back, and nothing is logged. The panel shows the elapsed time against a 15-minute target.
+
+The training content is not included; generate it once:
+
+```powershell
+pip install matplotlib
+python Tools\Training\make_training_content.py
+```
+
+This writes `Assets/Resources/Manuscripts/Training/iAT.json` and `iAA.json` and the iAA charts in
+`Assets/StreamingAssets/Augmentation Images/Training/`. Every number and chart is computed from the conversation
+text in the script, so it is also a worked example of producing manuscripts and augmentations that agree.
+The training voices must also be installed: add them to `Tools/voices.json` (see [Adding voices](#adding-voices)).
+*Tools → iXR → Training → Build Training Avatars* (with `Training` open) rebuilds the training avatars.
+
 ## Data output
 
-Gaze fixations are written as CSV files to `Assets/Logs/` (ignored by git), one file per condition:
+Each session writes into its own folder in `Assets/Logs/` (ignored by git):
 
-`<Sequence>_<ParticipantID>_<yyyy-MM-dd_HH-mm-ss>.csv`
+`<ID>_Seq<n>_S<session>_<yyyy-MM-dd_HH-mm-ss>/` — a resumed session adds `_resumed-C<c>Q<q>`.
+
+For every question it holds two files, where `T<position>` is the condition's place in the order (session 2 is T3 and T4):
+
+- `<ID>_Seq<n>_S<session>_T<position>_<condition>_Q<q>_Gaze.csv`: one row per fixation
+- `…_ReviewTime.csv`: time spent in the review and the number of Back presses
+
+Gaze CSV columns:
 
 | Column | Meaning |
 |---|---|
-| `ParticipantID` | Participant identifier from the master scene |
+| `ParticipantID` | Participant identifier |
 | `Sequence` | Condition order used for this participant |
+| `Trial` | Position of the condition in the order (1–4) |
 | `Condition` | `iAA`, `iAT`, `nAA` or `nAT` |
-| `Team` | Avatar team shown in this condition (`Team A`–`Team D`) |
+| `Team` | Avatar team shown in this condition |
 | `TrialScript` | Manuscript the question came from |
 | `QuestionNum` | Question number within the condition (1–4) |
-| `Phase` | `Conversation` or `Augmentation` |
-| `TargetType` | `Avatar` or `Wall` |
-| `TargetID` | Agent slot (`agent_1`–`agent_4`) or `Wall` |
-| `TargetName` | Avatar name (e.g. `Tony`) |
+| `Phase` | `Conversation` or `Review` |
+| `TargetType` | `Avatar`, `Wall` or `Environment` |
+| `TargetID` | Agent slot (`agent_1`–`agent_4`), or the object hit |
+| `TargetName` | Avatar or object name |
 | `FixationDuration` | Fixation length in seconds |
+| `FixationStart` | Fixation start time in seconds |
+| `HitX`, `HitY`, `HitZ` | Mean hit point in room coordinates (meters) |
 
-Gaze is **head gaze** (a ray from the headset's forward direction), not eye tracking.
+A fixation is a head-ray dwell of at least 0.3 s on one target. Gaze is **head gaze** (a ray from the headset's
+forward direction), not eye tracking. The gaze cursor sits where the head ray hits a surface and uses the
+recorder's layer mask and range, so it marks exactly what is logged; it turns green when a discussion ends.
 
 ## Project structure
 
 ```
-Assets/
 ├── Testbed/
-│   ├── Scripts/             # Study logic: session flow, agents, TTS, gaze logging, grid, blinking
-│   │   └── Editor/          # Custom inspectors, avatar-team and import tools
-│   ├── Scenes/              # Master Level Control (entry) + Testbed iAA / iAT / nAA / nAT
+│   ├── Scripts/             # Session flow, agents, TTS, gaze logging and cursor, grid, locomotion,
+│   │   │                    # room calibration, training
+│   │   └── Editor/          # Custom inspectors; avatar-team, card-text, training and import tools
+│   ├── Scenes/              # Master Level Control (entry), Testbed iAA / iAT / nAA / nAT, Training
 │   │   └── Prototypes/      # Development scenes (lip sync, head-ray interaction, MRUK)
-│   ├── Prefabs/Avatars/     # Avatar prefabs (Male/, Female/)
+│   ├── Prefabs/             # Avatars/ (Male/, Female/), Training Avatars/, signs
 │   ├── Animation/           # Talking and idle animator controllers
 │   ├── Models/              # Table model; Rocketbox avatars with custom import settings
-│   └── Materials/, Shaders/
-├── Avatars/                 # Microsoft Rocketbox avatars and animations
-├── Resources/Manuscripts/   # Your manuscripts (not included)
-└── StreamingAssets/
-    ├── Augmentation Images/ # Your augmentation images (not included)
-    └── tts/                 # Piper runtime and voices (downloaded by Tools/Setup-TTS.ps1)
-docs/                        # Session checklist, manuscript format, architecture, examples
-Packages/                    # Unity package manifest (Meta XR SDK 205)
-ProjectSettings/             # Unity project and build settings
-Tools/                       # Setup-TTS.ps1 and the example voice list
+│   ├── Materials/           # Including occlusion-aware materials for passthrough
+│   └── Shaders/             # Including occlusion shaders for passthrough
+├── Resources/
+│   ├── Locomotion/          # Walk animations
+│   └── Manuscripts/         # Your manuscripts, and Training/ (generated; not included)
+```
+
+and in the root list:
+
+```
+Tools/                       # Setup-TTS.ps1, the example voice list, Training/ content generator
 ```
 
 ## Documentation
@@ -230,7 +290,7 @@ Tools/                       # Setup-TTS.ps1 and the example voice list
 - Windows only; the TTS engine runs as a local process.
 - Standalone Quest builds are not supported (see [Requirements](#requirements)). *Tools → iXR → Bake All Session Audio* pre-renders speech for one voice only.
 - Gaze is approximated by head orientation.
-- Room alignment with MR Utility Kit is experimental and not used by the study scenes.
+- Room anchoring needs a one-time calibration per PC and play area; the MR Utility Kit scene in `Prototypes/` is an earlier, unused approach.
 
 ## Citation
 

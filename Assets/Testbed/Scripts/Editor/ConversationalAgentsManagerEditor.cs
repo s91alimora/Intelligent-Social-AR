@@ -108,7 +108,7 @@ public class ConversationalAgentsManagerEditor : Editor
                     if (used.Contains(s)) continue;
                     string preview = currentAgent.GetSentence(s) ?? "";
                     preview = preview.Replace("\n", " ");
-                    if (preview.Length > 48) preview = preview[..48] + "бн";
+                    if (preview.Length > 48) preview = preview[..48] + "...";
                     options.Add((s, $"{s}: {preview}"));
                 }
 

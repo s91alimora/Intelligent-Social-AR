@@ -242,6 +242,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agentName: Kusal
+  displayName: 
   sentences:
   - Hi this is Kusal, today is Tuesday and I have a meeting tomorrow at 5 pm
   animator: {fileID: 201490092}
@@ -262,6 +263,8 @@ MonoBehaviour:
   lengthScale: 1
   noiseScale: 0.33
   extraArgs: 
+  normalizeLoudness: 1
+  targetRmsDb: -20
 --- !u!114 &201490089
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -546,6 +549,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agentName: Joe
+  displayName: 
   sentences:
   - 'Hello, this is Joe, it is very nice to meet all of you. Wish I could see you
     some time in the future, let''s see how destiny goes. '
@@ -568,6 +572,8 @@ MonoBehaviour:
   lengthScale: 1
   noiseScale: 0.33
   extraArgs: 
+  normalizeLoudness: 1
+  targetRmsDb: -20
 --- !u!114 &210590921
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -983,6 +989,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agentName: Tony
+  displayName: 
   sentences:
   - 'Hi this is Tony, I love playing basketball and watch movies. '
   - meow meow meow
@@ -1004,6 +1011,8 @@ MonoBehaviour:
   lengthScale: 1
   noiseScale: 0.33
   extraArgs: 
+  normalizeLoudness: 1
+  targetRmsDb: -20
 --- !u!114 &326701636
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1302,6 +1311,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agentName: Norman
+  displayName: 
   sentences:
   - Hi this is Norman, it is very nice to meet you, here is my passport.
   - meow meow meow
@@ -1323,6 +1333,8 @@ MonoBehaviour:
   lengthScale: 1
   noiseScale: 0.33
   extraArgs: 
+  normalizeLoudness: 1
+  targetRmsDb: -20
 --- !u!114 &339123816
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1716,6 +1728,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agentName: Kathleen
+  displayName: 
   sentences:
   - Hi this is Kathleen, I am doing my best to get the pilot study project ready
     and running
@@ -1738,6 +1751,8 @@ MonoBehaviour:
   lengthScale: 1
   noiseScale: 0.33
   extraArgs: 
+  normalizeLoudness: 1
+  targetRmsDb: -20
 --- !u!95 &536988378
 Animator:
   serializedVersion: 5
@@ -2060,6 +2075,8 @@ MonoBehaviour:
   lengthScale: 1
   noiseScale: 0.33
   extraArgs: 
+  normalizeLoudness: 1
+  targetRmsDb: -20
 --- !u!114 &642850920
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2230,6 +2247,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agentName: Arctic
+  displayName: 
   sentences:
   - 'Hello, this is Arctic, it is very nice to meet you. Did you have a nice day?
     I had a terrific day. '
@@ -2271,6 +2289,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agentName: agent_3
+  displayName: 
   sentences:
   - Yeah I agree, I have a hard time to figure out the the data structure that should
     be used for the first assignment
@@ -2294,6 +2313,8 @@ MonoBehaviour:
   lengthScale: 1.2
   noiseScale: 0.8
   extraArgs: 
+  normalizeLoudness: 1
+  targetRmsDb: -20
 --- !u!82 &719974247
 AudioSource:
   m_ObjectHideFlags: 0
@@ -2597,6 +2618,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agentName: agent_2
+  displayName: 
   sentences:
   - I think it is alright in general but some of the homeworking is giving me a headache
   - "Totally\u2014maybe we set up a study session and hit office hours to clear up
@@ -2619,6 +2641,8 @@ MonoBehaviour:
   lengthScale: 0.95
   noiseScale: 0.5
   extraArgs: 
+  normalizeLoudness: 1
+  targetRmsDb: -20
 --- !u!82 &763233042
 AudioSource:
   m_ObjectHideFlags: 0
@@ -2821,6 +2845,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agentName: Alan
+  displayName: 
   sentences:
   - Hi this is Alan, I'm the main character in Attack on Titan and I can turn into
     a giant. My dream is to destroy the world. How about you?
@@ -2842,6 +2867,8 @@ MonoBehaviour:
   lengthScale: 1
   noiseScale: 0.33
   extraArgs: 
+  normalizeLoudness: 1
+  targetRmsDb: -20
 --- !u!114 &846699578
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3249,6 +3276,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agentName: John
+  displayName: 
   sentences:
   - Hi this is John, I love to watch Strangers Things, and the next few episodes
     are gonna release in two days.
@@ -3271,6 +3299,8 @@ MonoBehaviour:
   lengthScale: 1
   noiseScale: 0.33
   extraArgs: 
+  normalizeLoudness: 1
+  targetRmsDb: -20
 --- !u!114 &922165986
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3548,6 +3578,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agentName: Layla
+  displayName: 
   sentences:
   - 'Hi this is Layla, it is very nice to meet you. Tomorrow is gonna be Christmas
     Eve. '
@@ -3569,6 +3600,8 @@ MonoBehaviour:
   lengthScale: 1
   noiseScale: 0.33
   extraArgs: 
+  normalizeLoudness: 1
+  targetRmsDb: -20
 --- !u!114 &966331975
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4265,6 +4298,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agentName: Alba
+  displayName: 
   sentences:
   - 'Hi this is Alba and I''m gonna cook dinner right away. Wish me luck and you
     have a good one. '
@@ -4286,6 +4320,8 @@ MonoBehaviour:
   lengthScale: 1
   noiseScale: 0.33
   extraArgs: 
+  normalizeLoudness: 1
+  targetRmsDb: -20
 --- !u!114 &1075276857
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4816,6 +4852,8 @@ MonoBehaviour:
   lengthScale: 1
   noiseScale: 0.33
   extraArgs: 
+  normalizeLoudness: 1
+  targetRmsDb: -20
 --- !u!114 &1735614586
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4829,6 +4867,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agentName: agent_1
+  displayName: 
   sentences:
   - What do you think about the data structure and algorithm class for this semester?
   - I hope the next few courses would give us a break.
@@ -5373,6 +5412,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agentName: Cori
+  displayName: 
   sentences:
   - Hi this is Cori, I just made three dishes in 30 minutes and I'm so proud of myself.
   animator: {fileID: 1805654435}
@@ -5393,6 +5433,8 @@ MonoBehaviour:
   lengthScale: 1
   noiseScale: 0.33
   extraArgs: 
+  normalizeLoudness: 1
+  targetRmsDb: -20
 --- !u!114 &1805654439
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5930,6 +5972,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agentName: Amy
+  displayName: 
   sentences:
   - 'Hello, I''m kelly. So nice to meet you. What a loveley day. '
   - ni ge xiao xiong gao
@@ -5951,6 +5994,8 @@ MonoBehaviour:
   lengthScale: 1
   noiseScale: 0.33
   extraArgs: 
+  normalizeLoudness: 1
+  targetRmsDb: -20
 --- !u!114 &1923514870
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6303,6 +6348,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agentName: Jenny
+  displayName: 
   sentences:
   - 'How are you doing everyone, I''m Jenny, am I stage performer, dancer, and singer
     from BlackPink, I''m gonna sing you guys like Jenny. '
@@ -6324,6 +6370,8 @@ MonoBehaviour:
   lengthScale: 1
   noiseScale: 0.33
   extraArgs: 
+  normalizeLoudness: 1
+  targetRmsDb: -20
 --- !u!114 &1953645344
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6636,6 +6684,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agentName: Kristin
+  displayName: 
   sentences:
   - 'Hi, this is kristin, nice to meet you. I would love to have some hot tea please. '
   - mama mia
@@ -6657,6 +6706,8 @@ MonoBehaviour:
   lengthScale: 1
   noiseScale: 0.33
   extraArgs: 
+  normalizeLoudness: 1
+  targetRmsDb: -20
 --- !u!114 &2023608026
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6941,6 +6992,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agentName: Bryce
+  displayName: 
   sentences:
   - Hola, this is Bryce, holly shit laugh my ass off no problem, what is your problem?
   - meow meow meow meow meow
@@ -6962,6 +7014,8 @@ MonoBehaviour:
   lengthScale: 1
   noiseScale: 0.33
   extraArgs: 
+  normalizeLoudness: 1
+  targetRmsDb: -20
 --- !u!114 &2105439934
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7117,6 +7171,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agentName: Lessac
+  displayName: 
   sentences:
   - Hi this is Lessac, I played basketball today and my back hurts
   animator: {fileID: 2113474032}
@@ -7137,6 +7192,8 @@ MonoBehaviour:
   lengthScale: 1
   noiseScale: 0.33
   extraArgs: 
+  normalizeLoudness: 1
+  targetRmsDb: -20
 --- !u!114 &2113474037
 MonoBehaviour:
   m_ObjectHideFlags: 0

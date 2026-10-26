@@ -13,6 +13,7 @@ public class GridGenerator : MonoBehaviour
     [Header("Rendering")]
     public Color lineColor = new Color(0.25f, 0.25f, 0.25f, 1f);
     public float lineWidth = 0.02f;
+    public Material lineMaterial;                      // optional; empty uses Sprites/Default
 
     [Header("Column Labels (TextMesh)")]
     public bool showColumnLabels = true;
@@ -99,6 +100,7 @@ public class GridGenerator : MonoBehaviour
             GameObject go = Instantiate(labelPrefab, pos, Quaternion.Euler(labelRotationEuler), transform);
             go.name = $"grid-label-{i}";
             go.transform.localScale = Vector3.one * labelScale;
+            _labels.Add(go); // tracked so ClearLabels() removes it on the next Build/BuildLabels
 
             // Setup Canvas Camera
             Canvas canvas = go.GetComponentInChildren<Canvas>();
@@ -145,7 +147,7 @@ public class GridGenerator : MonoBehaviour
         GameObject go = new GameObject("grid-line");
         go.transform.SetParent(transform);
         LineRenderer lr = go.AddComponent<LineRenderer>();
-        lr.material = new Material(Shader.Find("Sprites/Default"));
+        lr.sharedMaterial = lineMaterial != null ? lineMaterial : new Material(Shader.Find("Sprites/Default"));
         lr.startColor = lr.endColor = lineColor;
         lr.startWidth = lr.endWidth = lineWidth;
         lr.positionCount = 2;

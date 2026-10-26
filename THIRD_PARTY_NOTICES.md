@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-Intelligent-Social-AR's own source code is licensed under the [Apache License 2.0](LICENSE.md). The project also uses third-party software, models and assets under their own licenses, listed below.
+Intelligent-Social-AR's own source code is licensed under the [Apache License 2.0](LICENSE.md), except for the files listed below. The project also uses third-party software, models and assets under their own licenses, listed below.
 
 This file is provided for information and is not legal advice. Licenses were checked against each component's official source in September 2026; always consult the original license before reuse.
 
@@ -66,6 +66,18 @@ Copyright © Facebook Technologies, LLC and its affiliates. All rights reserved.
 
 - **Liberation Sans** font: SIL Open Font License 1.1; the full text is in `Assets/TextMesh Pro/Fonts/LiberationSans - OFL.txt`.
 - **EmojiOne** sample sprites: provided by EmojiOne (<https://www.emojione.com/>); see `Assets/TextMesh Pro/Sprites/EmojiOne Attribution.txt` and EmojiOne's licensing terms.
+
+### Depth-occlusion shaders
+
+`Assets/Testbed/Shaders/`. These shaders let the real world draw in front of virtual surfaces in passthrough (Meta Depth API).
+
+- **`OcclusionSurfaceLitDoubleSided.shader`** is a modified copy of `OcclusionSurfaceLit` from the Meta XR Core SDK (`com.meta.xr.sdk.core`), made double-sided. It keeps Meta's original header and is licensed under the [Oculus SDK License Agreement](https://developer.oculus.com/licenses/oculussdk/), not under this project's Apache License.
+
+  Copyright © Meta Platforms, Inc. and affiliates. All rights reserved.
+
+- **`TMP_SDF-Mobile Occlusion.shader`** is a modified copy of TextMesh Pro's `TMP_SDF-Mobile` shader, with Meta's occlusion macros added. TextMesh Pro is licensed under the Unity Companion License: <https://unity.com/legal/licenses/unity-companion-license>
+
+- **`OcclusionUnlitVertexColor.shader`** is this project's own code (Apache License 2.0). It includes Meta's `EnvironmentOcclusionBiRP.cginc` from the Meta XR Core SDK package, which is not copied into this repository.
 
 ---
 

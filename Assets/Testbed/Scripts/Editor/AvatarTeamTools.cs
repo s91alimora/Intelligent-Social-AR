@@ -12,8 +12,8 @@ using UnityEngine;
 /// is equalized via per-prefab lengthScale calibration and loudness via runtime RMS normalization
 /// in CrossPlatformTTS, so neither differs systematically between teams.
 ///
-/// Team order = trial position (Team A -> trial 1, ... for every sequence). Condition order rotates
-/// across the four StudySequences, so each team meets each condition exactly once across sequences.
+/// Each team is tied to one condition in every sequence (Team A -> nAT, B -> nAA, C -> iAT, D -> iAA).
+/// Condition order rotates across the four StudySequences, so each team appears once in each position across sequences.
 /// Member order within a team = fixed casting (element 0 -> agent_1, etc.).
 /// </summary>
 public static class AvatarTeamTools
@@ -23,12 +23,12 @@ public static class AvatarTeamTools
     // Casting order (element i -> agent_{i+1}) alternates by team: A/C are M,F,M,F and B/D are
     // F,M,F,M, so each agent slot is voiced by 2 male + 2 female avatars across a session -
     // gender is not confounded with script role or spawn position.
-    private static readonly (string teamName, string[] members)[] Partition =
+    private static readonly (string teamName, SessionController.StudyCondition condition, string[] members)[] Partition =
     {
-        ("Team A", new[] { "Male/Alan",     "Female/Layla",  "Male/Tony",       "Female/Kristin" }),
-        ("Team B", new[] { "Female/Alba",   "Male/Norman",   "Female/Kathleen", "Male/Arctic"    }),
-        ("Team C", new[] { "Male/John",     "Female/Cori",   "Male/Bryce",      "Female/Amy"     }),
-        ("Team D", new[] { "Female/Jenny",  "Male/Joe",      "Female/Lessac",   "Male/Ryan"      }),
+        ("Team A", SessionController.StudyCondition.nAT, new[] { "Male/Alan",    "Female/Layla",  "Male/Tony",       "Female/Kristin" }),
+        ("Team B", SessionController.StudyCondition.nAA, new[] { "Female/Alba",  "Male/Norman",   "Female/Kathleen", "Male/Arctic"    }),
+        ("Team C", SessionController.StudyCondition.iAT, new[] { "Male/John",    "Female/Cori",   "Male/Bryce",      "Female/Amy"     }),
+        ("Team D", SessionController.StudyCondition.iAA, new[] { "Female/Jenny", "Male/Joe",      "Female/Lessac",   "Male/Ryan"      }),
     };
 
     [MenuItem("Tools/iXR/Assign Proposed Avatar Teams")]
@@ -45,9 +45,9 @@ public static class AvatarTeamTools
         var teams = new List<MasterLevelController.AvatarTeam>();
         var missing = new List<string>();
 
-        foreach (var (teamName, members) in Partition)
+        foreach (var (teamName, condition, members) in Partition)
         {
-            var team = new MasterLevelController.AvatarTeam { teamName = teamName };
+            var team = new MasterLevelController.AvatarTeam { teamName = teamName, condition = condition };
             foreach (var member in members)
             {
                 string path = AvatarRoot + member + ".prefab";
@@ -71,6 +71,6 @@ public static class AvatarTeamTools
         EditorSceneManager.MarkSceneDirty(master.gameObject.scene);
 
         Debug.Log("[AvatarTeamTools] Assigned 4 avatar teams:\n" + string.Join("\n",
-            teams.Select(t => $"  {t.teamName}: {string.Join(", ", t.members.Select(m => m.name))}")));
+            teams.Select(t => $"  {t.teamName} ({t.condition}): {string.Join(", ", t.members.Select(m => m.name))}")));
     }
 }

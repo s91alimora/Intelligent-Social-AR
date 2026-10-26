@@ -45,7 +45,10 @@ public class CrossPlatformTTS : MonoBehaviour
 
     static readonly Dictionary<string, CachedLine> _cache = new();
     // Invariant culture keeps cache keys (and thus baked MD5 filenames) identical across machine locales.
-    string Key(string text) => $"{modelFileName}|{FloatInv(lengthScale)}|{FloatInv(noiseScale)}|{text}";
+    // Extra args (e.g. "--speaker 6", one voice of a multi-speaker model) change the voice, so they are part of the
+    // key; left out when empty, which keeps the baked filenames of the study avatars (none has extra args) unchanged.
+    string Key(string text) => $"{modelFileName}|{FloatInv(lengthScale)}|{FloatInv(noiseScale)}|" +
+                               (string.IsNullOrWhiteSpace(extraArgs) ? "" : extraArgs.Trim() + "|") + text;
 
     static string FloatInv(float v) => v.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
@@ -74,16 +77,20 @@ public class CrossPlatformTTS : MonoBehaviour
         IsSpeaking = false;
     }
 
-    public void Speak(string text, Action onComplete = null)
+    /// <summary>
+    /// Speaks <paramref name="text"/>. <paramref name="onStarted"/> fires when the audio actually starts,
+    /// which for a line that is not cached yet is only after Piper has synthesized it.
+    /// </summary>
+    public void Speak(string text, Action onComplete = null, Action onStarted = null)
     {
         if (string.IsNullOrWhiteSpace(text)) { onComplete?.Invoke(); return; }
 
         if (_cache.TryGetValue(Key(text), out var cached))
         {
-            StartCoroutine(PlayCached(cached, onComplete));
+            StartCoroutine(PlayCached(cached, onComplete, onStarted));
             return;
         }
-        StartCoroutine(SpeakCo(text, onComplete));
+        StartCoroutine(SpeakCo(text, onComplete, onStarted));
     }
 
     /// <summary>Frees all cached clips (native audio memory). Call between condition scenes.</summary>
@@ -96,15 +103,22 @@ public class CrossPlatformTTS : MonoBehaviour
         _cache.Clear();
     }
 
-    IEnumerator PlayCached(CachedLine line, Action done)
+    IEnumerator PlayCached(CachedLine line, Action done, Action started)
     {
-        IsSpeaking = true;
+        yield return PlayLine(line, started);
+        done?.Invoke();
+    }
+
+    /// <summary>Plays a synthesized line and waits until it has finished.</summary>
+    IEnumerator PlayLine(CachedLine line, Action started)
+    {
         _src.clip = line.clip;
         _src.volume = GetPlaybackVolume(line.speechRms);
+        IsSpeaking = true;
         _src.Play();
+        started?.Invoke();
         yield return new WaitWhile(() => _src.isPlaying);
         IsSpeaking = false;
-        done?.Invoke();
     }
 
     /// <summary>
@@ -152,17 +166,23 @@ public class CrossPlatformTTS : MonoBehaviour
     }
 
 
-    public void Prepare(string text)
+/// <summary>Loads (or synthesizes) a line into the cache without playing it.</summary>
+    public void Prepare(string text) => StartCoroutine(PrepareRoutine(text));
+
+    /// <summary>
+    /// Prepare as a coroutine: finishes once the line is cached (or could not be loaded), so a caller can
+    /// wait for it. Uses the baked WAV in StreamingAssets/AudioCache when there is one, otherwise Piper.
+    /// </summary>
+    public IEnumerator PrepareRoutine(string text)
     {
-        if (string.IsNullOrWhiteSpace(text)) return;
-        if (_cache.ContainsKey(Key(text))) return;
-        StartCoroutine(SpeakCo(text, null, prepareOnly: true));
+        if (string.IsNullOrWhiteSpace(text) || _cache.ContainsKey(Key(text))) yield break;
+        yield return SpeakCo(text, null, prepareOnly: true);
     }
 
 
 
-    IEnumerator SpeakCo(string text, Action done, bool prepareOnly = false)
-    {
+    IEnumerator SpeakCo(string text, Action done, Action started = null, bool prepareOnly = false)
+        {
         // 1. Check for Pre-Baked file in StreamingAssets (Crucial for Android/Quest)
         string bakedFilename = GetBakedFilename(text);
         string bakedPath = Path.Combine(Application.streamingAssetsPath, "AudioCache", bakedFilename);
@@ -189,15 +209,7 @@ public class CrossPlatformTTS : MonoBehaviour
                     AudioClip clip = DownloadHandlerAudioClip.GetContent(req);
                     var line = new CachedLine { clip = clip, speechRms = MeasureSpeechRms(clip) };
                     _cache[Key(text)] = line;
-                    if (!prepareOnly)
-                    {
-                        _src.clip = clip;
-                        _src.volume = GetPlaybackVolume(line.speechRms);
-                        IsSpeaking = true;
-                        _src.Play();
-                        yield return new WaitWhile(() => _src.isPlaying);
-                        IsSpeaking = false;
-                    }
+                    if (!prepareOnly) yield return PlayLine(line, started);
                     done?.Invoke();
                     yield break;
                 }
@@ -265,15 +277,7 @@ public class CrossPlatformTTS : MonoBehaviour
             // cache
             _cache[Key(text)] = line;
 
-            if (!prepareOnly)
-            {
-                _src.clip = clip;
-                _src.volume = GetPlaybackVolume(line.speechRms);
-                IsSpeaking = true;
-                _src.Play();
-                yield return new WaitWhile(() => _src.isPlaying);
-                IsSpeaking = false;
-            }
+            if (!prepareOnly) yield return PlayLine(line, started);
         }
 
         try { File.Delete(wavPath); } catch { }

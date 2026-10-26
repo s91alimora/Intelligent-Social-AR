@@ -2,10 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using System.IO;
 using System.Text.RegularExpressions;
 using TMPro;
-using UnityEngine.Networking;
 
 public class AgentAugmentationInteracter : MonoBehaviour
 {
@@ -32,11 +30,11 @@ public class AgentAugmentationInteracter : MonoBehaviour
 
     private void Start()
     {
-        // Ensure jitterBuffer is always smaller than saccadeThreshold
-        if (jitterBuffer >= saccadeThreshold)
+        // Ensure jitterBuffer is never negative and always smaller than saccadeThreshold
+        if (jitterBuffer < 0f || jitterBuffer >= saccadeThreshold)
         {
-            jitterBuffer = saccadeThreshold * 0.8f;
-            Debug.LogWarning($"[AgentAugmentationInteracter] jitterBuffer was too large. Adjusted to {jitterBuffer}");
+            jitterBuffer = Mathf.Clamp(jitterBuffer, 0f, saccadeThreshold * 0.8f);
+            Debug.LogWarning($"[AgentAugmentationInteracter] jitterBuffer was out of range. Adjusted to {jitterBuffer}");
         }
     }
 
@@ -64,17 +62,18 @@ public class AgentAugmentationInteracter : MonoBehaviour
 
     public void PopulateAll(List<ConversationalAgent> agents, string fullJson, int questionIndex, SessionController.StudyCondition condition)
     {
-        string qKey = $"question_{questionIndex}_Data";
-        int startIdx = fullJson.IndexOf(qKey);
-        if (startIdx == -1) return;
-        
+        // Lookups are scoped to this question, so a null value (e.g. a deliberately missing summary)
+        // shows as empty instead of the next question's value.
+        string question = ManuscriptJson.GetQuestion(fullJson, questionIndex);
+        if (question == "") return;
+
         foreach (var agent in agents)
         {
-            PopulateAgentUI(agent.gameObject, fullJson, startIdx, condition);
+            PopulateAgentUI(agent.gameObject, question, condition);
         }
     }
 
-    private void PopulateAgentUI(GameObject agent, string json, int startIdx, SessionController.StudyCondition condition)
+    private void PopulateAgentUI(GameObject agent, string question, SessionController.StudyCondition condition)
     {
         // 1. Identify agent index (e.g. agent_1 -> 1)
         string agentName = agent.name; // agent_1, agent_2, etc.
@@ -104,8 +103,8 @@ public class AgentAugmentationInteracter : MonoBehaviour
         TextMeshProUGUI summaryText = FindComponentByName<TextMeshProUGUI>(root, "Individual Summary");
         if (summaryText != null)
         {
-            string summaryData = ExtractJsonString(json, $"{agentName}_Sum", startIdx);
-            summaryText.text = FormatBulletinPoints(summaryData);
+            string summaryData = ManuscriptJson.GetString(ManuscriptJson.GetObject(question, "glb_ind_Sums"), $"{agentName}_Sum");
+            summaryText.text = ManuscriptJson.FormatBullets(summaryData);
         }
 
         // 5. Populate Stats and Toggle Visibility
@@ -130,21 +129,20 @@ public class AgentAugmentationInteracter : MonoBehaviour
             if (wordsSpokenObj != null) wordsSpokenObj.SetActive(false);
 
             // Populate iAA Stats
-            string statsKey = $"{agentName}_apr_Stats";
-            int statsIdx = json.IndexOf($"\"{statsKey}\"", startIdx);
-            if (statsIdx != -1)
+            string stats = ManuscriptJson.GetObject(question, $"{agentName}_apr_Stats");
+            if (stats != "")
             {
                 TextMeshProUGUI spokenText = spokenFirstObj != null ? spokenFirstObj.GetComponentInChildren<TextMeshProUGUI>(true) : null;
                 TextMeshProUGUI seatedText = seatedFirstObj != null ? seatedFirstObj.GetComponentInChildren<TextMeshProUGUI>(true) : null;
 
-                if (spokenText != null) spokenText.text = ExtractJsonValue(json, "times_Spoken_First", statsIdx);
-                if (seatedText != null) seatedText.text = ExtractJsonValue(json, "times_Seated_First", statsIdx);
+                if (spokenText != null) spokenText.text = ManuscriptJson.GetValue(stats, "times_Spoken_First");
+                if (seatedText != null) seatedText.text = ManuscriptJson.GetValue(stats, "times_Seated_First");
 
                 Image seatingImage = seatingPatternObj != null ? seatingPatternObj.GetComponent<Image>() : null;
                 if (seatingImage != null)
                 {
-                    string imagePath = ExtractJsonString(json, "ind_Seating", statsIdx);
-                    StartCoroutine(LoadImageToUI(imagePath, seatingImage));
+                    string imagePath = ManuscriptJson.GetString(stats, "ind_Seating");
+                    StartCoroutine(ManuscriptJson.LoadImage(imagePath, seatingImage));
                 }
             }
         }
@@ -159,9 +157,8 @@ public class AgentAugmentationInteracter : MonoBehaviour
             if (wordsSpokenObj != null) wordsSpokenObj.SetActive(true);
 
             // Populate iAT Stats
-            string trdStatsKey = $"{agentName}_trd_Stats";
-            int trdIdx = json.IndexOf($"\"{trdStatsKey}\"", startIdx);
-            if (trdIdx != -1)
+            string trdStats = ManuscriptJson.GetObject(question, $"{agentName}_trd_Stats");
+            if (trdStats != "")
             {
                 // Note: The values are likely in children TMPs since there are "Titles" in the screenshot
                 // We'll look for TMPs that are NOT the titles if possible, or usually just the first/second one.
@@ -172,9 +169,9 @@ public class AgentAugmentationInteracter : MonoBehaviour
                 TextMeshProUGUI timesText = GetValueTMP(timesSpokenObj);
                 TextMeshProUGUI wordsText = GetValueTMP(wordsSpokenObj);
 
-                if (durText != null) durText.text = ExtractJsonString(json, "dur_Spoken", trdIdx);
-                if (timesText != null) timesText.text = ExtractJsonValue(json, "times_Spoken", trdIdx);
-                if (wordsText != null) wordsText.text = ExtractJsonValue(json, "words_Spoken", trdIdx);
+                if (durText != null) durText.text = ManuscriptJson.GetString(trdStats, "dur_Spoken");
+                if (timesText != null) timesText.text = ManuscriptJson.GetValue(trdStats, "times_Spoken");
+                if (wordsText != null) wordsText.text = ManuscriptJson.GetValue(trdStats, "words_Spoken");
             }
         }
     }
@@ -215,84 +212,6 @@ public class AgentAugmentationInteracter : MonoBehaviour
             if (found != null) return found;
         }
         return null;
-    }
-
-    private string ExtractJsonString(string json, string key, int searchStart)
-    {
-        var match = Regex.Match(json.Substring(searchStart), $"\"{key}\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"");
-        return match.Success ? Regex.Unescape(match.Groups[1].Value) : "";
-    }
-
-    private string ExtractJsonValue(string json, string key, int searchStart)
-    {
-        // Improved: Matches "key" : value (can be number, boolean, or string if we use the right pattern)
-        var match = Regex.Match(json.Substring(searchStart), $"\"{key}\"\\s*:\\s*([^,\\s}}]+)");
-        return match.Success ? match.Groups[1].Value.Trim('\"') : "0";
-    }
-
-    private string FormatBulletinPoints(string text)
-    {
-        if (string.IsNullOrEmpty(text)) return "";
-        string[] parts = text.Split(new char[] { '■' }, System.StringSplitOptions.RemoveEmptyEntries);
-        string formatted = "";
-        for (int i = 0; i < parts.Length; i++)
-        {
-            formatted += "■ <indent=1.2em>" + parts[i].Trim() + "</indent>" + (i < parts.Length - 1 ? "\n" : "");
-        }
-        return formatted;
-    }
-
-    private IEnumerator LoadImageToUI(string relativePath, Image uiImage)
-    {
-        if (string.IsNullOrEmpty(relativePath)) yield break;
-
-        // 1. Try local file path (Primary for Editor/PC)
-        string localPath = "";
-        if (relativePath.StartsWith("Assets/"))
-            localPath = Path.Combine(Application.dataPath, relativePath.Substring(7));
-        else
-            localPath = Path.Combine(Application.dataPath, relativePath);
-
-        if (Application.platform != RuntimePlatform.Android && File.Exists(localPath))
-        {
-            byte[] fileData = File.ReadAllBytes(localPath);
-            Texture2D tex = new Texture2D(2, 2);
-            if (tex.LoadImage(fileData))
-            {
-                uiImage.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
-                yield break;
-            }
-        }
-
-        // 2. Fallback to StreamingAssets (For Standalone Quest/Android)
-        string streamingPath = Path.Combine(Application.streamingAssetsPath, relativePath);
-        
-        if (streamingPath.Contains("://") || Application.platform == RuntimePlatform.Android)
-        {
-            using (UnityWebRequest uwr = UnityWebRequestTexture.GetTexture(streamingPath))
-            {
-                yield return uwr.SendWebRequest();
-
-                if (uwr.result == UnityWebRequest.Result.Success)
-                {
-                    Texture2D tex = DownloadHandlerTexture.GetContent(uwr);
-                    uiImage.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
-                }
-                else
-                {
-                    Debug.LogWarning($"[AgentAugmentationInteracter] Failed to load from StreamingAssets: {uwr.error}");
-                }
-            }
-        }
-        else if (File.Exists(streamingPath))
-        {
-            byte[] fileData = File.ReadAllBytes(streamingPath);
-            Texture2D tex = new Texture2D(2, 2);
-            if (tex.LoadImage(fileData))
-            {
-                uiImage.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
-            }
-        }
     }
 
     private void Update()
@@ -382,11 +301,10 @@ public class AgentAugmentationInteracter : MonoBehaviour
     private void ShowCanvas(GameObject agent)
     {
         Canvas canvas = GetAgentCanvas(agent);
-        GameObject rotationOrigin = canvas.transform.parent.gameObject;
         if (canvas != null)
         {
             // Face the camera before showing (Y-axis only billboard)
-            FaceCameraYOnly(rotationOrigin.transform);
+            FaceCameraYOnly(canvas.transform.parent);
 
             canvas.gameObject.SetActive(true);
             if (canvas.renderMode == RenderMode.WorldSpace)

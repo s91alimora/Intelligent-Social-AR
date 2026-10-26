@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
 
@@ -35,6 +36,8 @@ public class GazeDataRecorder : MonoBehaviour
         public string TargetID;
         public string TargetName;
         public float FixationDuration;
+        public float FixationStart; // seconds into the phase (see StartRecording's phaseTimeOffset)
+        public Vector3 HitPoint;    // mean world-space point the head ray hit on the target during the fixation
     }
 
     private List<GazeDataEntry> _recordedData = new List<GazeDataEntry>();
@@ -46,6 +49,9 @@ public class GazeDataRecorder : MonoBehaviour
     private string _currentScript = "";
     private int _currentQuestion = 0;
     private string _currentPhase = "";
+    private float _minFixation;    // fixations shorter than this are not logged (0 = log every fixation)
+    private float _phaseStartTime; // Time.time at which the phase clock reads 0
+    private int _phaseStartIndex;  // first entry of the current phase; CancelRecording removes from here
 
     // Internal State for Gaze
     private GameObject _activeTarget;
@@ -53,6 +59,20 @@ public class GazeDataRecorder : MonoBehaviour
     private float _dwellTimer = 0f;
     private float _jitterTimer = 0f;
     private float _currentFixationDuration = 0f;
+    private float _fixationStart;
+    private Vector3 _hitSum;
+    private int _hitCount;
+    private readonly RaycastHit[] _hits = new RaycastHit[16];
+
+    // One row per trial: how long the participant looked around after the discussion (set by SessionController).
+    private class ReviewTimeEntry
+    {
+        public string Condition, Team, TrialScript;
+        public int QuestionNum;
+        public float Seconds;
+        public int BackPresses;
+    }
+    private readonly List<ReviewTimeEntry> _reviewTimes = new List<ReviewTimeEntry>();
 
     void Start()
     {
@@ -64,7 +84,11 @@ public class GazeDataRecorder : MonoBehaviour
         if (raySource == null && mainCamera != null) raySource = mainCamera.transform;
     }
 
-    public void StartRecording(string condition, string scriptName, int questionNum, string phase, string team = "")
+    /// <param name="minFixationSeconds">Fixations shorter than this are not logged (0 = log every fixation).</param>
+    /// <param name="phaseTimeOffset">Value of the phase clock (FixationStart) at this call; a phase resumed after
+    /// the wizard pressed Back passes the time it had already run, so FixationStart keeps counting from there.</param>
+    public void StartRecording(string condition, string scriptName, int questionNum, string phase, string team = "",
+                               float minFixationSeconds = 0f, float phaseTimeOffset = 0f)
     {
         ForceEndCurrentFixation();
 
@@ -73,7 +97,10 @@ public class GazeDataRecorder : MonoBehaviour
         _currentScript = scriptName;
         _currentQuestion = questionNum;
         _currentPhase = phase;
-        
+        _minFixation = minFixationSeconds;
+        _phaseStartTime = Time.time - phaseTimeOffset;
+        _phaseStartIndex = _recordedData.Count;
+
         _isRecording = true;
         _dwellTimer = 0f;
         _jitterTimer = 0f;
@@ -88,6 +115,35 @@ public class GazeDataRecorder : MonoBehaviour
         _isRecording = false;
     }
 
+    /// <summary>
+    /// Stops recording and throws away everything logged since the last StartRecording, including the fixation in
+    /// progress. Used when the wizard presses Back during a discussion: the discussion is replayed, so its partial
+    /// gaze data is not kept.
+    /// </summary>
+    public void CancelRecording()
+    {
+        if (!_isRecording) return;
+        _activeTarget = null;
+        _pendingTarget = null;
+        _dwellTimer = 0f;
+        _jitterTimer = 0f;
+        _currentFixationDuration = 0f;
+        int from = Mathf.Min(_phaseStartIndex, _recordedData.Count);
+        _recordedData.RemoveRange(from, _recordedData.Count - from);
+        _isRecording = false;
+    }
+
+    /// <summary>Sets (or, after the wizard went Back, updates) the review time of one trial.</summary>
+    public void SetReviewTime(string condition, string scriptName, int questionNum, string team, float seconds, int backPresses)
+    {
+        var entry = _reviewTimes.Find(e => e.TrialScript == scriptName && e.QuestionNum == questionNum);
+        if (entry == null) _reviewTimes.Add(entry = new ReviewTimeEntry { TrialScript = scriptName, QuestionNum = questionNum });
+        entry.Condition = condition;
+        entry.Team = team;
+        entry.Seconds = seconds;
+        entry.BackPresses = backPresses;
+    }
+
     void Update()
     {
         if (!_isRecording || raySource == null) return;
@@ -95,14 +151,16 @@ public class GazeDataRecorder : MonoBehaviour
         UpdateRaycast();
     }
 
+    private float PhaseTime => Time.time - _phaseStartTime;
+
     private void UpdateRaycast()
     {
-        Ray ray = new Ray(raySource.position, raySource.forward);
-        RaycastHit hit;
         GameObject hitTarget = null;
+        Vector3 hitPoint = Vector3.zero;
 
-        if (Physics.Raycast(ray, out hit, maxDistance, layerMask))
+        if (TryGetGazeHit(out RaycastHit hit))
         {
+            hitPoint = hit.point;
             if (hit.collider.CompareTag(wallTag))
             {
                 hitTarget = hit.collider.gameObject;
@@ -110,14 +168,8 @@ public class GazeDataRecorder : MonoBehaviour
             else
             {
                 var agentComp = hit.collider.GetComponentInParent<ConversationalAgent>();
-                if (agentComp != null)
-                {
-                    hitTarget = agentComp.gameObject;
-                }
-                else if (hit.collider.CompareTag(agentTag))
-                {
-                    hitTarget = hit.collider.gameObject;
-                }
+                // Anything else with a collider (the floor, a table, ...) is logged too, as Environment.
+                hitTarget = agentComp != null ? agentComp.gameObject : hit.collider.gameObject;
             }
         }
 
@@ -128,18 +180,20 @@ public class GazeDataRecorder : MonoBehaviour
             {
                 _jitterTimer = 0f;
                 _currentFixationDuration += Time.deltaTime;
+                _hitSum += hitPoint;
+                _hitCount++;
             }
             else
             {
                 _jitterTimer += Time.deltaTime;
-                // We keep adding to duration during the jitter period, 
+                // We keep adding to duration during the jitter period,
                 // but if it breaks the buffer, we stop the fixation.
-                _currentFixationDuration += Time.deltaTime; 
+                _currentFixationDuration += Time.deltaTime;
 
                 if (_jitterTimer >= jitterBuffer)
                 {
                     // Subtract the jitter time that we inaccurately added from the end
-                    _currentFixationDuration -= _jitterTimer; 
+                    _currentFixationDuration -= _jitterTimer;
                     EndCurrentFixation();
                 }
             }
@@ -153,7 +207,7 @@ public class GazeDataRecorder : MonoBehaviour
                 _dwellTimer += Time.deltaTime;
                 if (_dwellTimer >= saccadeThreshold)
                 {
-                    SwitchToTarget(hitTarget);
+                    SwitchToTarget(hitTarget, hitPoint);
                 }
             }
             else
@@ -169,25 +223,51 @@ public class GazeDataRecorder : MonoBehaviour
         }
     }
 
-    private void SwitchToTarget(GameObject target)
+    /// <summary>
+    /// Nearest collider on the head ray, skipping trigger colliders and anything attached to the ray source itself.
+    /// The Sphere Cursor is a child of CenterEyeAnchor with a collider 0.2 m straight ahead, so a plain raycast hits
+    /// it every frame and never reaches the agents or the wall.
+    /// </summary>
+    private bool TryGetGazeHit(out RaycastHit nearest)
+    {
+        nearest = default;
+        bool found = false;
+        var ray = new Ray(raySource.position, raySource.forward);
+        int count = Physics.RaycastNonAlloc(ray, _hits, maxDistance, layerMask, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < count; i++)
+        {
+            if (_hits[i].collider.transform.IsChildOf(raySource)) continue;
+            if (!found || _hits[i].distance < nearest.distance)
+            {
+                nearest = _hits[i];
+                found = true;
+            }
+        }
+        return found;
+    }
+
+    private void SwitchToTarget(GameObject target, Vector3 hitPoint)
     {
         ForceEndCurrentFixation();
-        
+
         _activeTarget = target;
         _jitterTimer = 0f;
         _pendingTarget = null;
         _dwellTimer = 0f;
         // The saccade duration counts towards the fixation
-        _currentFixationDuration = saccadeThreshold; 
+        _currentFixationDuration = saccadeThreshold;
+        _fixationStart = Mathf.Max(0f, PhaseTime - saccadeThreshold);
+        _hitSum = hitPoint;
+        _hitCount = 1;
     }
 
     private void EndCurrentFixation()
     {
-        if (_activeTarget != null && _currentFixationDuration > 0)
+        if (_activeTarget != null && _currentFixationDuration > 0 && _currentFixationDuration >= _minFixation)
         {
             LogFixationData(_activeTarget, _currentFixationDuration);
         }
-        
+
         _activeTarget = null;
         _currentFixationDuration = 0f;
         _jitterTimer = 0f;
@@ -208,7 +288,7 @@ public class GazeDataRecorder : MonoBehaviour
 
     private void LogFixationData(GameObject target, float duration)
     {
-        string tType = "Unknown";
+        string tType = "Environment";
         string tID = target.name;
         string tName = target.name;
 
@@ -241,7 +321,7 @@ public class GazeDataRecorder : MonoBehaviour
 
         GazeDataEntry entry = new GazeDataEntry()
         {
-            Sequence = "", // Will be filled perfectly during WriteDataToCSV
+            Sequence = "",
             Condition = _currentCondition,
             Team = _currentTeam,
             Phase = _currentPhase,
@@ -250,7 +330,9 @@ public class GazeDataRecorder : MonoBehaviour
             TargetType = tType,
             TargetID = tID,
             TargetName = tName,
-            FixationDuration = duration
+            FixationDuration = duration,
+            FixationStart = _fixationStart,
+            HitPoint = _hitCount > 0 ? _hitSum / _hitCount : Vector3.zero
         };
 
         _recordedData.Add(entry);
@@ -262,88 +344,73 @@ public class GazeDataRecorder : MonoBehaviour
     // adjacent precisely so they cannot drift apart unnoticed.
     private static readonly string[] CsvColumnNames =
     {
-        "ParticipantID", "Sequence", "Condition", "Team", "TrialScript", "QuestionNum",
-        "Phase", "TargetType", "TargetID", "TargetName", "FixationDuration"
+        "ParticipantID", "Sequence", "Trial", "Condition", "Team", "TrialScript", "QuestionNum",
+        "Phase", "TargetType", "TargetID", "TargetName", "FixationDuration",
+        "FixationStart", "HitX", "HitY", "HitZ"
     };
 
     private static string CsvHeader => string.Join(",", CsvColumnNames);
 
-    private static string[] CsvRow(string participantID, string seq, GazeDataEntry e) => new[]
+    private static string[] CsvRow(string participantID, string seq, int trial, GazeDataEntry e) => new[]
     {
-        participantID, seq, e.Condition, e.Team, e.TrialScript, e.QuestionNum.ToString(),
-        e.Phase, e.TargetType, e.TargetID, e.TargetName, e.FixationDuration.ToString("F3")
+        participantID, seq, trial.ToString(), e.Condition, e.Team, e.TrialScript, e.QuestionNum.ToString(),
+        e.Phase, e.TargetType, e.TargetID, e.TargetName,
+        F3(e.FixationDuration), F3(e.FixationStart), F3(e.HitPoint.x), F3(e.HitPoint.y), F3(e.HitPoint.z)
     };
 
-    /// <summary>
-    /// Returns a path whose header (if the file already exists) matches the current schema.
-    /// Tries the base name, then a "_v2" sibling; if both exist with foreign headers, falls back
-    /// to a timestamped file - rows are never appended under a mismatched header.
-    /// </summary>
-    private string ResolveSchemaSafePath(string folderPath, string fileName)
+    // One row per question, written next to its gaze CSV as <same name>_ReviewTime.csv.
+    private static readonly string[] ReviewCsvColumnNames =
     {
-        string baseName = Path.GetFileNameWithoutExtension(fileName);
-        string[] candidates =
-        {
-            Path.Combine(folderPath, fileName),
-            Path.Combine(folderPath, baseName + "_v2.csv"),
-        };
+        "ParticipantID", "Sequence", "Trial", "Condition", "Team", "TrialScript", "QuestionNum", "ReviewDuration", "BackPresses"
+    };
 
-        foreach (string candidate in candidates)
-        {
-            if (!File.Exists(candidate)) return candidate;
-            string firstLine;
-            using (var reader = new StreamReader(candidate)) firstLine = reader.ReadLine();
-            if (firstLine == CsvHeader) return candidate;
-            Debug.LogWarning($"[GazeDataRecorder] {candidate} uses a different column layout; trying the next filename.");
-        }
+    // Invariant culture: a comma-decimal locale would otherwise write "0,300" and split the column.
+    private static string F3(float v) => v.ToString("F3", CultureInfo.InvariantCulture);
 
-        return Path.Combine(folderPath, $"{baseName}_{System.DateTime.Now:yyyyMMdd_HHmmss}.csv");
-    }
+    /// <summary>Every session writes into its own folder in here; MasterLevelController checks it for an ID's earlier sessions.</summary>
+    public static string LogsFolder => Path.Combine(Application.dataPath, "Logs");
 
-    public void WriteDataToCSV(string participantID, string sequenceName)
+    /// <summary>
+    /// Writes one question's gaze rows to <paramref name="folder"/>/<paramref name="baseName"/>_Gaze.csv and its
+    /// review time to <paramref name="baseName"/>_ReviewTime.csv, replacing files of the same name. The rows stay in
+    /// memory, so a question written again after the wizard went Back into its review gets all its rows.
+    /// </summary>
+    public void WriteQuestionCSVs(string folder, string baseName, string participantID, string sequence, int trial,
+                                  int questionNum)
     {
         ForceEndCurrentFixation();
-        if (_recordedData.Count == 0) return;
+        var rows = _recordedData.FindAll(e => e.QuestionNum == questionNum);
+        var review = _reviewTimes.Find(r => r.QuestionNum == questionNum);
+        if (rows.Count == 0 && review == null) return;
 
-        string folderPath = Path.Combine(Application.dataPath, "Logs");
-        if (!Directory.Exists(folderPath))
+        Directory.CreateDirectory(folder);
+
+        if (rows.Count > 0)
         {
-            Directory.CreateDirectory(folderPath);
-        }
-
-        string fileName = "";
-        string timestamp = System.DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
-
-        if (!string.IsNullOrEmpty(sequenceName))
-        {
-            fileName = $"{sequenceName}_{participantID}_{timestamp}.csv";
-        }
-        else
-        {
-            fileName = $"{_currentCondition}_{participantID}_{timestamp}.csv";
-        }
-
-        string fullPath = ResolveSchemaSafePath(folderPath, fileName);
-        bool fileExists = File.Exists(fullPath);
-
-        // Build CSV content
-        using (StreamWriter writer = new StreamWriter(fullPath, true)) // Append mode ensures we don't overwrite if multiple writes happen
-        {
-            if (!fileExists)
+            string path = Path.Combine(folder, baseName + "_Gaze.csv");
+            using (var writer = new StreamWriter(path, false))
             {
                 writer.WriteLine(CsvHeader);
+                foreach (var entry in rows)
+                    writer.WriteLine(string.Join(",", CsvRow(participantID, sequence, trial, entry)));
             }
-
-            // Fallback sequence if needed
-            string seq = string.IsNullOrEmpty(sequenceName) ? "Standalone" : sequenceName;
-            foreach (var entry in _recordedData)
-            {
-                writer.WriteLine(string.Join(",", CsvRow(participantID, seq, entry)));
-            }
+            Debug.Log($"[GazeDataRecorder] Wrote {rows.Count} fixations to {path}");
         }
 
-        Debug.Log($"[GazeDataRecorder] Wrote {_recordedData.Count} records to {fullPath}");
-        _recordedData.Clear(); // Clear after writing to avoid duplicates if called multiple times
+        if (review != null)
+        {
+            string path = Path.Combine(folder, baseName + "_ReviewTime.csv");
+            using (var writer = new StreamWriter(path, false))
+            {
+                writer.WriteLine(string.Join(",", ReviewCsvColumnNames));
+                writer.WriteLine(string.Join(",", new[]
+                {
+                    participantID, sequence, trial.ToString(), review.Condition, review.Team, review.TrialScript,
+                    review.QuestionNum.ToString(), F3(review.Seconds), review.BackPresses.ToString()
+                }));
+            }
+            Debug.Log($"[GazeDataRecorder] Wrote the review time to {path}");
+        }
     }
 
     void OnValidate()

@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// Bridges Yutong's CrossPlatformTTS with Jasmine's Oculus LipSync pipeline.
+/// Bridges CrossPlatformTTS with the Oculus LipSync pipeline.
 /// Attach this to the same GameObject as CrossPlatformTTS.
 /// </summary>
 [RequireComponent(typeof(CrossPlatformTTS))]
