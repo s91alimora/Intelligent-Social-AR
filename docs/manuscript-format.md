@@ -41,6 +41,8 @@ Agents are numbered 1–4 (`agent_1` … `agent_4`). Which avatar plays each num
 
 Blocks a condition doesn't use are ignored, so every manuscript can keep the full structure.
 
+Every value is looked up only inside its own question. A key that is missing or set to `null` reads as empty and never falls through to another question's value. For example, an agent with no summary can have `"agent_3_Sum": null`, and its card shows nothing.
+
 ## `apr_Positions`: grid seating
 
 ```json
@@ -60,18 +62,23 @@ Blocks a condition doesn't use are ignored, so every manuscript can keep the ful
 
 ```json
 "glb_Responses": {
-  "order_Speech": [2, 1, 4, 3],
-  "agent_2_Resp": "I use them almost every week...",
-  "agent_1_Resp": "I agree they help, especially before exams...",
-  "agent_4_Resp": "They are useful, but the building feels a bit empty...",
-  "agent_3_Resp": "I rarely go in the evening..."
+  "order_Speech": [2, 1, 4, 2, 3],
+  "agent_1_Resp":   "I agree they help, especially before exams...",
+  "agent_2_Resp":   "I use them almost every week...",
+  "agent_2_Resp_2": "And to add to that, the quiet makes a real difference...",
+  "agent_3_Resp":   "I rarely go in the evening...",
+  "agent_4_Resp":   "They are useful, but the building feels a bit empty..."
 }
 ```
 
 - `order_Speech`: who speaks each turn. An agent may appear more than once.
-- `agent_N_Resp`: the spoken lines, one per turn.
+- `agent_N_Resp`: agent N's first line. When an agent speaks more than once in a question, its later lines are `agent_N_Resp_2`, `agent_N_Resp_3`, and so on.
 
-> **Important:** responses are read **in the order they appear in the file** and paired with `order_Speech` turn by turn; the agent number in the key is not used for matching. Write the `agent_N_Resp` entries in exactly the same order as `order_Speech`. When an agent speaks twice, repeat its key (`"agent_2_Resp"` twice); standard JSON parsers keep only one of the duplicates, but the testbed reads all of them.
+Lines are matched to agents by the number in the key. On each turn in `order_Speech`, that agent says its next line. The position of the keys in the file doesn't matter.
+
+- If `order_Speech` gives an agent more turns than it has lines, the extra turns are silent and a warning is logged.
+- Lines that never get a turn are not spoken, which is also logged.
+- A line set to `null` is skipped.
 
 The text is synthesized with the avatar's voice. Plain sentences work best; avoid symbols and abbreviations the voice would read literally.
 
@@ -90,7 +97,8 @@ The text is synthesized with the avatar's voice. Plain sentences work best; avoi
 ```
 
 - `agent_N_Sum`: bullet summary shown in front of an agent when the moderator looks at it.
-- `glb_Grp_Suggestions` and `glb_Emg_Themes`: follow-up suggestions and emerging themes on the back wall. Up to four themes are displayed.
+- `glb_Grp_Suggestions`: follow-up suggestions on the back wall.
+- `glb_Emg_Themes`: emerging themes on the back wall. Up to four are displayed: themes 1–2 on the first line and 3–4 on the second.
 - Start every bullet with `■`; the testbed splits on this character and puts each bullet on its own line.
 
 ## `apr_Augmentations`: grid-condition data (iAA)
@@ -107,12 +115,12 @@ The text is synthesized with the avatar's voice. Plain sentences work best; avoi
   "apr_Grp_Sums": {
     "speaking_Sum": "Augmentation Images/Group/example_Q1_Speaking_Sum.jpg",
     "grp_Move":     "Augmentation Images/Group/example_Q1_Group_Move.jpg",
-    "grp_Sim_Mat":  "Augmentation Images/Group/example_Q1_Sim_Mat.jpg"
+    "sim_Mat":      "Augmentation Images/Group/example_Q1_Sim_Mat.jpg"
   }
 }
 ```
 
-Image paths are relative to `Assets/StreamingAssets/`. Keep one entry per agent in `apr_Ind_Stats`.
+Keep one entry per agent in `apr_Ind_Stats`. The similarity-matrix image key is `sim_Mat`; older manuscripts used `grp_Sim_Mat`, which is still read when `sim_Mat` is absent.
 
 ## `trd_Augmentations`: table-condition data (iAT)
 
@@ -130,14 +138,26 @@ Image paths are relative to `Assets/StreamingAssets/`. Keep one entry per agent 
 
 ## Augmentation images
 
-Put images anywhere under `Assets/StreamingAssets/` and reference them by their path relative to that folder. Images are loaded while the testbed runs, so they don't need to be imported or assigned in Unity. Charts that show grid positions should use the same row order as the testbed: *Very Good* nearest, *Very Bad* farthest.
+Put images under `Assets/StreamingAssets/Augmentation Images/`. Reference each one by its path relative to `Assets/StreamingAssets/`, for example `Augmentation Images/Group/example_Q1_Sim_Mat.jpg`. A leading `Assets/StreamingAssets/` is also accepted.
+
+Images are loaded while the testbed runs, so they don't need to be imported or assigned in Unity.
+
+- **Path not found on PC:** the image is looked up by its file name anywhere under `StreamingAssets/Augmentation Images/`, so give every image a unique file name.
+- **Quest (Android) builds:** there is no file-name fallback, so the paths must be correct.
+- **No image:** if a path is empty or no image is found, that panel is hidden rather than left showing the previous chart.
+
+Charts that show grid positions should use the same row order as the testbed: *Very Good* nearest, *Very Bad* farthest.
+
+## Training manuscripts
+
+The training mode uses `Assets/Resources/Manuscripts/Training/iAA.json` and `iAT.json`, in the same format, with charts under `StreamingAssets/Augmentation Images/Training/`. Generate them with `python Tools/Training/make_training_content.py`, which needs matplotlib and the Liberation Serif font.
 
 ## Checklist for a new manuscript
 
 - [ ] Four questions, `question_1_Data` … `question_4_Data`, each with its own `qN_Txt`
 - [ ] Every `agent_N_Pos` is one of the five stance labels, spelled exactly
-- [ ] `agent_N_Resp` entries are in the same order as `order_Speech`
+- [ ] Every agent has as many lines (`agent_N_Resp`, `agent_N_Resp_2`, …) as it has turns in `order_Speech`
 - [ ] Augmentation blocks filled in for every question used in an iA condition
-- [ ] Every image path exists under `Assets/StreamingAssets/`
+- [ ] Every image path exists under `Assets/StreamingAssets/`, and image file names are unique
 - [ ] Bullets start with `■`
-- [ ] The file is valid JSON apart from intentionally repeated `agent_N_Resp` keys
+- [ ] The file is valid JSON
